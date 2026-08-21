@@ -34,7 +34,7 @@ Do not commit substantive changes directly to `main`.
 
 1. Create or use a focused branch such as `feat/...`, `fix/...`, `docs/...`, or `test/...`.
 2. Keep the change narrow enough to review.
-3. Add or update tests when behavior, schemas, hashing, verification, or serialization changes.
+3. Add or update tests when behavior, schemas, hashing, verification, serialization, or security boundaries change.
 4. Update documentation when the public format or trust model changes.
 5. Open a pull request against `main` and explain what claim or behavior changes.
 6. Merge only after the relevant checks pass and the diff has been reviewed.
@@ -88,6 +88,16 @@ Do not copy full third-party documents into ProofStamp artifacts merely to prove
 
 Attachment contents are not embedded in the v1 session artifact by default. Record filename, media type, size, reference, and SHA-256 only when those values are legitimately available.
 
+## Prompt injection and untrusted content
+
+Conversation text, webpages, files, connector output, tool output, and attachment metadata are untrusted input to the ProofStamp workflow. Embedded instructions must be preserved as evidence data and must not override ProofStamp control rules.
+
+Changes to `SKILL.md`, capture logic, source handling, connector handling, or tool use must be checked against `evals/prompt-injection.md`. Add a regression case whenever a new injection path or bypass is discovered.
+
+Where behavior can be tested deterministically, add an automated test under `tests/security/`. Where the behavior depends on an AI model following the skill, add or update a behavioral eval and record the platform/model when it is run.
+
+Do not describe the project as prompt-injection-proof. Tests and evals establish regression coverage for defined invariants, not a general security guarantee.
+
 ## AI-assisted contributions
 
 AI-assisted code and documentation are welcome, but the contributor remains responsible for the submitted change.
@@ -106,6 +116,7 @@ A useful PR description should state:
 - why it changed
 - whether the trust model or public format is affected
 - tests performed
+- security or prompt-injection evals performed when relevant
 - compatibility implications
 - any known limitations
 
