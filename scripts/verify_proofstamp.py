@@ -30,9 +30,18 @@ def load_json(path: Path, label: str) -> dict:
     return value
 
 
-def verify(artifact_path: Path, receipt_path: Path) -> list[str]:
+def verify(artifact_path: Path, receipt_path: Path) -> tuple[list[str], str, int]:
     errors: list[str] = []
+
+    first_hash, first_size = sha256_file(artifact_path)
     artifact = load_json(artifact_path, "artifact")
+    second_hash, second_size = sha256_file(artifact_path)
+
+    if first_hash != second_hash or first_size != second_size:
+        errors.append("artifact bytes changed during verification")
+
+    actual_hash = second_hash
+    actual_size = second_size
     receipt = load_json(receipt_path, "receipt")
 
     proofstamp = artifact.get("proofstamp")
@@ -52,8 +61,6 @@ def verify(artifact_path: Path, receipt_path: Path) -> list[str]:
             errors.append("receipt proofstamp.format is not 'proofstamp-receipt'")
         if receipt_meta.get("format_version") != "1.0":
             errors.append("receipt proofstamp.format_version is not '1.0'")
-
-    actual_hash, actual_size = sha256_file(artifact_path)
 
     artifact_meta = receipt.get("artifact")
     if not isinstance(artifact_meta, dict):
@@ -91,7 +98,7 @@ def verify(artifact_path: Path, receipt_path: Path) -> list[str]:
         if recalculated != actual_hash:
             errors.append("receipt recalculated_sha256 does not match artifact bytes")
 
-    return errors
+    return errors, actual_hash, actual_size
 
 
 def parse_args() -> argparse.Namespace:
@@ -111,7 +118,7 @@ def main() -> int:
             raise ValueError(f"artifact does not exist or is not a file: {args.artifact}")
         if not args.receipt.is_file():
             raise ValueError(f"receipt does not exist or is not a file: {args.receipt}")
-        errors = verify(args.artifact, args.receipt)
+        errors, actual_hash, actual_size = verify(args.artifact, args.receipt)
     except (ValueError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -122,7 +129,6 @@ def main() -> int:
             print(f"- {error}", file=sys.stderr)
         return 1
 
-    actual_hash, actual_size = sha256_file(args.artifact)
     print("Verification passed")
     print(f"SHA-256: {actual_hash}")
     print(f"Bytes: {actual_size}")
