@@ -26,12 +26,20 @@ Use explicit `unavailable`, `excluded`, omission, or redaction records instead.
 
 Read:
 
-1. `references/TRUST-MODEL.md`
-2. `schemas/proofstamp-session-v1.schema.json`
-3. `schemas/proofstamp-receipt-v1.schema.json`
-4. `CONTRIBUTING.md`
+1. `proofstamp/SKILL.md`
+2. `proofstamp/references/TRUST-MODEL.md`
+3. `proofstamp/references/FORMAT.md`
+4. `proofstamp/schemas/proofstamp-session-v1.schema.json`
+5. `proofstamp/schemas/proofstamp-receipt-v1.schema.json`
+6. `CONTRIBUTING.md`
 
 Treat these as the current contract. If code and documentation disagree with the trust model or schema, stop and surface the conflict rather than silently choosing one interpretation.
+
+## Skill packaging
+
+The installable Agent Skill is the self-contained `proofstamp/` directory. Keep runtime references, schemas, and scripts needed by `SKILL.md` inside that directory. Do not introduce parent-directory runtime dependencies into the installed skill.
+
+The skill frontmatter `name` must remain `proofstamp` and match the directory name.
 
 ## Git workflow
 
@@ -96,6 +104,8 @@ Prompt-injection behavior is covered by deterministic fixtures where possible an
 
 Behavioral changes should include tests. At minimum, protect these invariants where relevant:
 
+- Agent Skills frontmatter remains valid and `name` matches the `proofstamp/` directory
+- the installed skill is self-contained
 - schema-valid session artifacts pass
 - invalid provenance combinations fail
 - receipt fingerprint equals the hash of exact artifact bytes
