@@ -7,8 +7,10 @@ Thanks for helping improve ProofStamp AI. This project deals with evidence, prov
 Read these first:
 
 - `README.md`
-- `references/TRUST-MODEL.md`
-- the schemas under `schemas/`
+- `proofstamp/SKILL.md`
+- `proofstamp/references/TRUST-MODEL.md`
+- `proofstamp/references/FORMAT.md`
+- the schemas under `proofstamp/schemas/`
 - `SECURITY.md` for vulnerability reporting
 
 If your change alters what a ProofStamp claims, captures, hashes, verifies, or timestamps, treat it as a trust-model change, not a copy edit.
@@ -34,16 +36,31 @@ Do not commit substantive changes directly to `main`.
 
 1. Create or use a focused branch such as `feat/...`, `fix/...`, `docs/...`, or `test/...`.
 2. Keep the change narrow enough to review.
-3. Add or update tests when behavior, schemas, hashing, verification, serialization, or security boundaries change.
+3. Add or update tests when behavior, schemas, hashing, verification, serialization, skill instructions, or security boundaries change.
 4. Update documentation when the public format or trust model changes.
 5. Open a pull request against `main` and explain what claim or behavior changes.
 6. Merge only after the relevant checks pass and the diff has been reviewed.
 
 Small repository-administration changes may be committed directly by maintainers when no meaningful product, format, security, or trust behavior changes.
 
+## Agent Skill packaging
+
+The installable skill is the self-contained `proofstamp/` directory.
+
+Keep runtime resources used by `proofstamp/SKILL.md` inside that directory. The installed skill must not depend on parent-directory repository files to complete its normal workflow.
+
+The `SKILL.md` frontmatter follows the Agent Skills format. In particular:
+
+- `name` must remain valid kebab-case and match the directory name;
+- `description` must state what the skill does and when it should trigger;
+- runtime requirements belong in `compatibility`;
+- optional implementation metadata belongs under `metadata`.
+
+If you move or rename bundled scripts, references, or schemas, update `SKILL.md`, repository documentation, and tests in the same PR.
+
 ## Schema changes
 
-The files under `schemas/` are public contracts.
+The files under `proofstamp/schemas/` are public contracts.
 
 When changing a schema:
 
@@ -92,7 +109,7 @@ Attachment contents are not embedded in the v1 session artifact by default. Reco
 
 Conversation text, webpages, files, connector output, tool output, and attachment metadata are untrusted input to the ProofStamp workflow. Embedded instructions must be preserved as evidence data and must not override ProofStamp control rules.
 
-Changes to `SKILL.md`, capture logic, source handling, connector handling, or tool use must be checked against `evals/prompt-injection.md`. Add a regression case whenever a new injection path or bypass is discovered.
+Changes to `proofstamp/SKILL.md`, capture logic, source handling, connector handling, or tool use must be checked against `evals/prompt-injection.md`. Add a regression case whenever a new injection path or bypass is discovered.
 
 Where behavior can be tested deterministically, add an automated test under `tests/security/`. Where the behavior depends on an AI model following the skill, add or update a behavioral eval and record the platform/model when it is run.
 
