@@ -58,6 +58,7 @@
         },
         "messages": {
           "type": "array",
+          "minItems": 1,
           "items": {
             "$ref": "#/$defs/message"
           }
@@ -183,6 +184,17 @@
         "excluded"
       ]
     },
+    "capturedProvenance": {
+      "type": "string",
+      "enum": [
+        "host_exposed",
+        "conversation_visible",
+        "user_provided",
+        "tool_result",
+        "model_reported",
+        "derived"
+      ]
+    },
     "captureMethod": {
       "type": "string",
       "enum": [
@@ -195,7 +207,7 @@
     },
     "jsonValue": {
       "description": "Any JSON value that can be preserved in an inspectable artifact.",
-      "type": ["string", "number", "integer", "boolean", "object", "array", "null"]
+      "type": ["string", "number", "boolean", "object", "array", "null"]
     },
     "capturedValue": {
       "type": "object",
@@ -206,7 +218,7 @@
           "$ref": "#/$defs/jsonValue"
         },
         "provenance": {
-          "$ref": "#/$defs/provenance"
+          "$ref": "#/$defs/capturedProvenance"
         },
         "evidence_reference": {
           "type": "string",
@@ -220,21 +232,42 @@
       }
     },
     "statusValue": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["status", "provenance", "reason"],
-      "properties": {
-        "status": {
-          "enum": ["unavailable", "excluded"]
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "provenance", "reason"],
+          "properties": {
+            "status": {
+              "const": "unavailable"
+            },
+            "provenance": {
+              "const": "unavailable"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
         },
-        "provenance": {
-          "enum": ["unavailable", "excluded"]
-        },
-        "reason": {
-          "type": "string",
-          "minLength": 1
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "provenance", "reason"],
+          "properties": {
+            "status": {
+              "const": "excluded"
+            },
+            "provenance": {
+              "const": "excluded"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
         }
-      }
+      ]
     },
     "evidenceField": {
       "oneOf": [
@@ -283,7 +316,7 @@
           "description": "Textual content available to the capture process. Non-text resources should be referenced through attachments or sources."
         },
         "provenance": {
-          "$ref": "#/$defs/provenance"
+          "$ref": "#/$defs/capturedProvenance"
         },
         "timestamp": {
           "$ref": "#/$defs/evidenceField"
@@ -342,7 +375,7 @@
           "$ref": "#/$defs/sha256"
         },
         "provenance": {
-          "$ref": "#/$defs/provenance"
+          "$ref": "#/$defs/capturedProvenance"
         },
         "note": {
           "type": "string",
@@ -383,7 +416,7 @@
           "description": "Attachment bytes are not embedded in the v1 session artifact by default."
         },
         "provenance": {
-          "$ref": "#/$defs/provenance"
+          "$ref": "#/$defs/capturedProvenance"
         },
         "hash_status": {
           "enum": ["verified", "unverified", "unavailable"]
