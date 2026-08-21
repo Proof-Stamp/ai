@@ -1,6 +1,6 @@
 # ProofStamp AI
 
-[![skills.sh](https://skills.sh/b/proof-stamp/ai)](https://skills.sh/proof-stamp/ai)
+[ProofStamp on skills.sh](https://skills.sh/proof-stamp/ai/proofstamp)
 
 ProofStamp AI is an open Agent Skill and prompt workflow for creating a portable, inspectable record of the current AI session, hashing the exact exported bytes with SHA-256, verifying that fingerprint, and preparing the fingerprint for user-controlled external time evidence.
 
@@ -28,7 +28,7 @@ With the Vercel `skills` CLI:
 npx skills add https://github.com/Proof-Stamp/ai --skill proofstamp
 ```
 
-The `skills.sh` directory lists skills automatically after installs are observed through the CLI. No separate skills.sh submission PR is required.
+ProofStamp is listed on `skills.sh` at `https://skills.sh/proof-stamp/ai/proofstamp`.
 
 You can also install the `proofstamp/` directory manually in any Agent Skills-compatible host.
 
