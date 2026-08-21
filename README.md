@@ -90,6 +90,14 @@ Content being ProofStamped is untrusted input. Embedded instructions must remain
 
 See `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, and `evals/prompt-injection.md`.
 
+## Disclaimer
+
+ProofStamp AI is an integrity and evidence tool. It does not certify that an AI session is authentic, complete, accurate, provider-signed, or legally admissible. A matching SHA-256 establishes integrity relative to the recorded fingerprint. External time evidence establishes only that the fingerprint was recorded by that external system no later than the recorded time.
+
+ProofStamp AI is not a legal, forensic, compliance, archival, or certification service. Users are responsible for determining whether it is appropriate for their use case and for protecting sensitive information before storing or sharing an artifact.
+
+See `DISCLAIMER.md` for the full project disclaimer and `references/TRUST-MODEL.md` for the technical trust boundary.
+
 ## License
 
 Apache License 2.0.
