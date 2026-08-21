@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a pre-filled mailto link for a verified ProofStamp artifact."""
+"""Create a required email handoff for a verified ProofStamp artifact."""
 
 from __future__ import annotations
 
@@ -9,10 +9,11 @@ import sys
 from pathlib import Path
 from urllib.parse import quote
 
-from verify_proofstamp import sha256_file, verify
+from verify_proofstamp import load_json, sha256_file, verify
 
 
 VERIFY_URL = "https://email.proofstamp.org/verify"
+VALID_COMPLETENESS = {"complete", "partial", "unknown"}
 
 
 def load_receipt(path: Path) -> dict:
@@ -25,20 +26,30 @@ def load_receipt(path: Path) -> dict:
     return value
 
 
-def build_mailto(artifact_path: Path, receipt_path: Path) -> str:
+def build_email_content(artifact_path: Path, receipt_path: Path) -> tuple[str, str]:
     errors, verified_hash, verified_size = verify(artifact_path, receipt_path)
     if errors:
         raise ValueError("ProofStamp verification failed: " + "; ".join(errors))
 
     receipt = load_receipt(receipt_path)
+    artifact = load_json(artifact_path, "artifact")
     actual_hash, actual_size = sha256_file(artifact_path)
     if actual_hash != verified_hash or actual_size != verified_size:
-        raise ValueError("artifact bytes changed during mailto creation")
+        raise ValueError("artifact bytes changed during email handoff creation")
 
     receipt_hash = receipt.get("fingerprint", {}).get("sha256")
     receipt_size = receipt.get("artifact", {}).get("size_bytes")
     if receipt_hash != actual_hash or receipt_size != actual_size:
         raise ValueError("receipt no longer matches the selected artifact")
+
+    capture = artifact.get("capture")
+    completeness = None
+    if isinstance(capture, dict):
+        completeness_value = capture.get("completeness")
+        if isinstance(completeness_value, dict):
+            completeness = completeness_value.get("status")
+    if completeness not in VALID_COMPLETENESS:
+        raise ValueError("artifact is missing a valid capture completeness status")
 
     subject = f"ProofStamp: {artifact_path.name}"
     body = "\n".join(
@@ -49,24 +60,39 @@ def build_mailto(artifact_path: Path, receipt_path: Path) -> str:
             f"SHA-256: {actual_hash}",
             f"Size: {actual_size} bytes",
             "Hash verified locally: yes",
+            f"Capture completeness: {completeness}",
             "",
             "Keep the original .proofstamp.json file and its detached .proofstamp.receipt.json receipt.",
             "",
-            "A matching SHA-256 later shows that a file matches these exact bytes. This email does not prove when the underlying AI conversation originally occurred.",
+            "A matching SHA-256 later confirms exact-byte integrity only. It does not prove truth, authenticity, or when the underlying AI conversation originally occurred.",
             "",
             f"Check this file later: {VERIFY_URL}",
         ]
     )
+    return subject, body
 
+
+def build_mailto(artifact_path: Path, receipt_path: Path) -> str:
+    subject, body = build_email_content(artifact_path, receipt_path)
     return f"mailto:?subject={quote(subject, safe='')}&body={quote(body, safe='')}"
+
+
+def build_email_text(artifact_path: Path, receipt_path: Path) -> str:
+    subject, body = build_email_content(artifact_path, receipt_path)
+    return f"To:\nSubject: {subject}\n\n{body}"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Create a mailto link from a verified ProofStamp artifact and receipt."
+        description="Create the required email handoff from a verified ProofStamp artifact and receipt."
     )
     parser.add_argument("artifact", type=Path, help="Path to the .proofstamp.json artifact")
     parser.add_argument("receipt", type=Path, help="Path to the detached receipt")
+    parser.add_argument(
+        "--text",
+        action="store_true",
+        help="Output pre-filled email text with a blank recipient instead of a mailto URI",
+    )
     return parser.parse_args()
 
 
@@ -78,12 +104,16 @@ def main() -> int:
             raise ValueError(f"artifact does not exist or is not a file: {args.artifact}")
         if not args.receipt.is_file():
             raise ValueError(f"receipt does not exist or is not a file: {args.receipt}")
-        mailto = build_mailto(args.artifact, args.receipt)
+        output = (
+            build_email_text(args.artifact, args.receipt)
+            if args.text
+            else build_mailto(args.artifact, args.receipt)
+        )
     except (ValueError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    print(mailto)
+    print(output)
     return 0
 
 
