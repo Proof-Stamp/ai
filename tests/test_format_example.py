@@ -114,6 +114,31 @@ class FormatExampleTests(unittest.TestCase):
             )
             self.assertEqual(0, verify_result.returncode, verify_result.stderr)
 
+    def test_creator_refuses_to_overwrite_artifact(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            artifact_copy = Path(temp_dir) / "session.proofstamp.json"
+            original = ARTIFACT.read_bytes()
+            artifact_copy.write_bytes(original)
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(CREATE_SCRIPT),
+                    str(artifact_copy),
+                    "--output",
+                    str(artifact_copy),
+                    "--force",
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("must not overwrite", result.stderr)
+            self.assertEqual(original, artifact_copy.read_bytes())
+
     def test_one_byte_change_breaks_verification(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             artifact_copy = Path(temp_dir) / ARTIFACT.name
