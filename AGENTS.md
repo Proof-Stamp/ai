@@ -8,6 +8,39 @@ ProofStamp AI creates a portable record of AI-session information that the captu
 
 Correct claims and explicit limitations matter more than convenience.
 
+## Agent quick start
+
+Run commands from the repository root.
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m unittest discover -s tests -p "test_*.py" -v
+```
+
+The primary runtime contract is `proofstamp/SKILL.md`.
+
+Before any substantive product, format, security, hashing, completeness, or trust-model change, read:
+
+- `proofstamp/references/TRUST-MODEL.md`
+- `proofstamp/references/FORMAT.md`
+- the schemas under `proofstamp/schemas/`
+- `CONTRIBUTING.md`
+
+Do not report tests as passing unless you actually ran them and observed the result.
+
+## Repository map
+
+- `proofstamp/SKILL.md` — runtime Agent Skill contract
+- `proofstamp/scripts/` — receipt, verification, and email-handoff reference scripts
+- `proofstamp/schemas/` — public JSON contracts
+- `proofstamp/references/` — trust model, format, privacy, and platform-capability rules
+- `tests/` — deterministic contract and implementation tests
+- `tests/security/` — deterministic security regression fixtures/tests
+- `evals/` — model-dependent behavioral evals
+- `examples/` — synthetic examples only
+- `PROMPT.md` — prompt-only workflow for hosts where the skill is not installed
+- `RELEASE.md` — current release checklist and release notes
+
 ## Non-negotiable trust boundary
 
 Never:
