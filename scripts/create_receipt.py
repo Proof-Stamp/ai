@@ -58,24 +58,32 @@ def utc_now() -> str:
 def write_json_atomic(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = json.dumps(value, indent=2, ensure_ascii=False) + "\n"
-    with tempfile.NamedTemporaryFile(
-        "w",
-        encoding="utf-8",
-        newline="\n",
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
-        delete=False,
-    ) as handle:
-        handle.write(payload)
-        temp_name = handle.name
-    os.replace(temp_name, path)
+    temp_name: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            newline="\n",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            handle.write(payload)
+            temp_name = handle.name
+        os.replace(temp_name, path)
+        temp_name = None
+    finally:
+        if temp_name is not None:
+            try:
+                Path(temp_name).unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 def build_receipt(artifact: Path) -> dict:
-    load_artifact_header(artifact)
-
     first_hash, first_size = sha256_file(artifact)
+    load_artifact_header(artifact)
     second_hash, second_size = sha256_file(artifact)
 
     if first_hash != second_hash or first_size != second_size:
@@ -101,7 +109,7 @@ def build_receipt(artifact: Path) -> dict:
         "verification": {
             "verified": True,
             "recalculated_sha256": second_hash,
-            "method": "Read the saved artifact bytes twice and compare both SHA-256 calculations.",
+            "method": "Read the saved artifact bytes twice, validate its ProofStamp header between reads, and compare both SHA-256 calculations.",
         },
         "created_at": {
             "value": utc_now(),
@@ -140,6 +148,8 @@ def main() -> int:
         if not artifact.is_file():
             raise ValueError(f"artifact does not exist or is not a file: {artifact}")
         output = args.output or default_receipt_path(artifact)
+        if output.resolve(strict=False) == artifact.resolve():
+            raise ValueError("receipt output must not overwrite the session artifact")
         if output.exists() and not args.force:
             raise ValueError(f"receipt already exists: {output}; use --force to replace it")
 
