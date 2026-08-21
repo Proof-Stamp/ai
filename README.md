@@ -29,6 +29,8 @@ The session artifact contains captured evidence and provenance. The detached rec
 
 The skill captures only information legitimately available to the current AI environment. Missing or protected information is marked unavailable or excluded rather than reconstructed.
 
+After successful verification, the workflow can also create a pre-filled `mailto:` link containing the filename, SHA-256, byte size, verification status, limitation text, and the ProofStamp verification URL. The user chooses the recipient and sends the email. Files are not attached automatically by `mailto:`.
+
 ## Install
 
 Use the `proofstamp/` directory as the skill directory in any Agent Skills-compatible host.
@@ -44,6 +46,17 @@ The skill is self-contained with its bundled:
 - `proofstamp/scripts/`
 
 Exact installation steps depend on the AI host. The core format is provider-neutral, but session visibility, downloadable-file support, metadata exposure, and local hashing capabilities vary by platform.
+
+## Use without installing the skill
+
+Yes. A user can use ProofStamp with a normal prompt.
+
+See `PROMPT.md` for two options:
+
+- a short prompt that tells the AI to fetch and follow the current public `proofstamp/SKILL.md`;
+- a standalone prompt that embeds the core capture, security, hashing, receipt, and mailto requirements.
+
+Prompt-only use is less repeatable than an installed skill because different hosts may interpret the prompt differently or lack access to downloadable files, exact saved bytes, hashing, schemas, or session metadata. For stronger reproducibility, use the installed skill or pin the prompt to a tagged release/commit.
 
 ## Core principles
 
@@ -87,7 +100,15 @@ Create a fresh receipt for a `.proofstamp.json` artifact:
 python proofstamp/scripts/create_receipt.py path/to/session.proofstamp.json
 ```
 
-The receipt creation and verification scripts use only the Python standard library.
+Create a pre-filled email handoff only after the artifact/receipt pair verifies:
+
+```bash
+python proofstamp/scripts/create_mailto.py \
+  path/to/session.proofstamp.json \
+  path/to/session.proofstamp.receipt.json
+```
+
+The receipt creation, verification, and mailto scripts use only the Python standard library.
 
 Development/schema tests use the dependency in `requirements-dev.txt`.
 
@@ -101,8 +122,10 @@ Development/schema tests use the dependency in `requirements-dev.txt`.
 6. It writes the final `.proofstamp.json` artifact.
 7. It hashes the exact saved bytes with SHA-256 and independently recalculates the digest.
 8. It creates a detached `.proofstamp.receipt.json` only after verification succeeds.
-9. The user downloads both files.
-10. The user may hash the downloaded artifact again at `https://email.proofstamp.org/` and send the prepared email to create external time evidence for that fingerprint.
+9. It gives the user both downloadable files and a pre-filled **Email this ProofStamp** `mailto:` link.
+10. The user chooses the recipient and sends the email. Standard `mailto:` does not attach the files automatically.
+11. The user can later select the downloaded artifact at `https://email.proofstamp.org/verify` and compare it against the ProofStamp text/fingerprint.
+12. As an alternative, the user may use `https://email.proofstamp.org/` to hash the downloaded artifact in the browser and prepare the email there.
 
 If the host cannot create a stable downloadable file or cannot verify the exact saved bytes, the skill must disclose that limitation and must not fabricate a verified receipt.
 
