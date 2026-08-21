@@ -20,7 +20,7 @@ A ProofStamp does **not**, by itself, prove:
 - that an external timestamp is the original creation time of the session; or
 - that a ProofStamp will be accepted as evidence by a court, regulator, arbitrator, auditor, insurer, employer, or other third party.
 
-See `references/TRUST-MODEL.md` for the technical trust boundary.
+See `proofstamp/references/TRUST-MODEL.md` for the technical trust boundary.
 
 ## User responsibility
 
