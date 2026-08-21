@@ -1,0 +1,428 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://proofstamp.org/schemas/proofstamp-session-v1.schema.json",
+  "title": "ProofStamp Session Format v1",
+  "description": "Portable record of AI-session information available to a ProofStamp capture process. This schema describes captured evidence and provenance; it does not authenticate the AI provider or guarantee session completeness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "proofstamp",
+    "session",
+    "environment",
+    "sources",
+    "attachments",
+    "capture",
+    "limitations"
+  ],
+  "properties": {
+    "proofstamp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "format_version", "generator", "capture_method"],
+      "properties": {
+        "format": {
+          "const": "proofstamp-session"
+        },
+        "format_version": {
+          "const": "1.0"
+        },
+        "generator": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name and, where available, version of the implementation that created the artifact."
+        },
+        "capture_method": {
+          "$ref": "#/$defs/captureMethod"
+        }
+      }
+    },
+    "session": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "messages"],
+      "properties": {
+        "platform": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "session_id": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "title": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "started_at": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "ended_at": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/message"
+          }
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model", "client", "system_prompt", "private_reasoning"],
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "model": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "client": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "harness": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "ui_settings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/namedEvidenceField"
+          }
+        },
+        "accessible_instructions": {
+          "type": "array",
+          "description": "Instructions legitimately exposed to the capture process. Protected or hidden instructions must not be reconstructed.",
+          "items": {
+            "$ref": "#/$defs/namedEvidenceField"
+          }
+        },
+        "system_prompt": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "private_reasoning": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "extra_metadata": {
+          "type": "array",
+          "description": "Optional host-specific metadata, with provenance preserved field by field.",
+          "items": {
+            "$ref": "#/$defs/namedEvidenceField"
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "description": "Sources actually consulted during the session or capture, not merely sources that were available.",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/attachment"
+      }
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_at", "scope", "omissions", "redactions"],
+      "properties": {
+        "generated_at": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "scope": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "omissions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/omission"
+          }
+        },
+        "redactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/redaction"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Human-readable limitations that travel with the evidence artifact."
+    }
+  },
+  "$defs": {
+    "provenance": {
+      "type": "string",
+      "enum": [
+        "host_exposed",
+        "conversation_visible",
+        "user_provided",
+        "tool_result",
+        "model_reported",
+        "derived",
+        "unavailable",
+        "excluded"
+      ]
+    },
+    "captureMethod": {
+      "type": "string",
+      "enum": [
+        "ai_generated",
+        "host_export",
+        "api_capture",
+        "browser_capture",
+        "provider_signed"
+      ]
+    },
+    "jsonValue": {
+      "description": "Any JSON value that can be preserved in an inspectable artifact.",
+      "type": ["string", "number", "integer", "boolean", "object", "array", "null"]
+    },
+    "capturedValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "provenance"],
+      "properties": {
+        "value": {
+          "$ref": "#/$defs/jsonValue"
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "evidence_reference": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional host, message, tool, API, or signature reference supporting this field."
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "statusValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "provenance", "reason"],
+      "properties": {
+        "status": {
+          "enum": ["unavailable", "excluded"]
+        },
+        "provenance": {
+          "enum": ["unavailable", "excluded"]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "evidenceField": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/capturedValue"
+        },
+        {
+          "$ref": "#/$defs/statusValue"
+        }
+      ]
+    },
+    "namedEvidenceField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "evidence"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidenceField"
+        }
+      }
+    },
+    "message": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "role", "content", "provenance"],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Role as exposed by the host or represented in the visible conversation, for example user, assistant, or tool."
+        },
+        "content": {
+          "type": "string",
+          "description": "Textual content available to the capture process. Non-text resources should be referenced through attachments or sources."
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "timestamp": {
+          "$ref": "#/$defs/evidenceField"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "attachment_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "provenance"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": ["web", "file", "connector", "tool", "other"]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "attachment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "filename", "content_included", "provenance"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "filename": {
+          "type": "string",
+          "minLength": 1
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "host_reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content_included": {
+          "const": false,
+          "description": "Attachment bytes are not embedded in the v1 session artifact by default."
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "hash_status": {
+          "enum": ["verified", "unverified", "unavailable"]
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "omission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["category", "reason"],
+      "properties": {
+        "category": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["location", "reason"],
+      "properties": {
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
