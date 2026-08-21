@@ -1,0 +1,173 @@
+{
+  "proofstamp": {
+    "format": "proofstamp-session",
+    "format_version": "1.0",
+    "generator": "ProofStamp AI synthetic example",
+    "capture_method": "ai_generated"
+  },
+  "session": {
+    "platform": {
+      "value": "ExampleChat",
+      "provenance": "host_exposed",
+      "evidence_reference": "synthetic-host-metadata"
+    },
+    "session_id": {
+      "value": "synthetic-session-001",
+      "provenance": "host_exposed",
+      "evidence_reference": "synthetic-host-metadata"
+    },
+    "title": {
+      "value": "Prepare a project handoff",
+      "provenance": "conversation_visible"
+    },
+    "started_at": {
+      "value": "2026-08-21T12:00:00Z",
+      "provenance": "host_exposed",
+      "evidence_reference": "synthetic-host-metadata"
+    },
+    "ended_at": {
+      "value": "2026-08-21T12:04:00Z",
+      "provenance": "host_exposed",
+      "evidence_reference": "synthetic-host-metadata"
+    },
+    "messages": [
+      {
+        "sequence": 1,
+        "message_id": "msg-001",
+        "role": "user",
+        "content": "Summarize the project notes and give me three handoff actions.",
+        "provenance": "conversation_visible",
+        "timestamp": {
+          "value": "2026-08-21T12:00:00Z",
+          "provenance": "host_exposed"
+        },
+        "attachment_refs": [
+          "att-001"
+        ]
+      },
+      {
+        "sequence": 2,
+        "message_id": "msg-002",
+        "role": "assistant",
+        "content": "The project is ready for handoff. The next actions are: confirm the owner, archive the final notes, and schedule the review.",
+        "provenance": "conversation_visible",
+        "timestamp": {
+          "value": "2026-08-21T12:04:00Z",
+          "provenance": "host_exposed"
+        },
+        "source_refs": [
+          "src-001"
+        ]
+      }
+    ]
+  },
+  "environment": {
+    "provider": {
+      "value": "Example AI Provider",
+      "provenance": "host_exposed",
+      "evidence_reference": "synthetic-host-metadata"
+    },
+    "model": {
+      "value": "ExampleModel 1.0",
+      "provenance": "host_exposed",
+      "evidence_reference": "synthetic-host-metadata"
+    },
+    "client": {
+      "value": "ExampleChat Web",
+      "provenance": "host_exposed",
+      "evidence_reference": "synthetic-host-metadata"
+    },
+    "harness": {
+      "status": "unavailable",
+      "provenance": "unavailable",
+      "reason": "not_exposed_by_synthetic_host"
+    },
+    "ui_settings": [
+      {
+        "name": "theme",
+        "evidence": {
+          "value": "dark",
+          "provenance": "host_exposed",
+          "evidence_reference": "synthetic-ui-state"
+        }
+      }
+    ],
+    "accessible_instructions": [
+      {
+        "name": "user_response_preference",
+        "evidence": {
+          "value": "Keep the handoff concise.",
+          "provenance": "user_provided",
+          "evidence_reference": "msg-001"
+        }
+      }
+    ],
+    "system_prompt": {
+      "status": "unavailable",
+      "provenance": "unavailable",
+      "reason": "not_exposed_by_synthetic_host"
+    },
+    "private_reasoning": {
+      "status": "excluded",
+      "provenance": "excluded",
+      "reason": "not_part_of_proofstamp_capture"
+    }
+  },
+  "sources": [
+    {
+      "id": "src-001",
+      "kind": "web",
+      "title": "Synthetic project notes",
+      "url": "https://example.com/project-notes",
+      "reference": "synthetic-source-001",
+      "provenance": "tool_result",
+      "note": "Synthetic source metadata only. No third-party page content is embedded."
+    }
+  ],
+  "attachments": [
+    {
+      "id": "att-001",
+      "filename": "synthetic-project-notes.txt",
+      "media_type": "text/plain",
+      "size_bytes": 128,
+      "host_reference": "synthetic-attachment-001",
+      "content_included": false,
+      "provenance": "host_exposed",
+      "hash_status": "unavailable",
+      "note": "Synthetic attachment bytes are intentionally not part of this example."
+    }
+  ],
+  "capture": {
+    "generated_at": {
+      "value": "2026-08-21T12:05:00Z",
+      "provenance": "derived",
+      "note": "Fixed synthetic time used to keep the checked-in example deterministic."
+    },
+    "scope": [
+      "visible conversation",
+      "accessible environment metadata",
+      "sources actually consulted",
+      "attachment metadata"
+    ],
+    "omissions": [
+      {
+        "category": "system_prompt",
+        "reason": "Not exposed by the synthetic host."
+      },
+      {
+        "category": "private_reasoning",
+        "reason": "Excluded from ProofStamp capture."
+      }
+    ],
+    "redactions": [],
+    "warnings": [
+      "This is synthetic example data and is not a real AI session."
+    ]
+  },
+  "limitations": [
+    "This synthetic artifact demonstrates the ProofStamp Session Format v1 and is not evidence of a real AI session.",
+    "The recorded host and model metadata are synthetic and do not represent provider-authenticated claims.",
+    "The attachment bytes are not included and no attachment fingerprint is available.",
+    "A matching SHA-256 proves integrity relative to the recorded fingerprint, not truth or session completeness."
+  ]
+}

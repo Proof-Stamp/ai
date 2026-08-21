@@ -1,0 +1,29 @@
+{
+  "proofstamp": {
+    "format": "proofstamp-receipt",
+    "format_version": "1.0"
+  },
+  "artifact": {
+    "filename": "example-session.proofstamp.json",
+    "size_bytes": 5120,
+    "format": "proofstamp-session",
+    "format_version": "1.0"
+  },
+  "fingerprint": {
+    "algorithm": "SHA-256",
+    "sha256": "1e103f563ddc475aea7ccd5fe56210f47722b3bcffdd8db07c2cd515dea7783d"
+  },
+  "verification": {
+    "verified": true,
+    "recalculated_sha256": "1e103f563ddc475aea7ccd5fe56210f47722b3bcffdd8db07c2cd515dea7783d",
+    "method": "Read the saved artifact bytes twice and compare both SHA-256 calculations."
+  },
+  "created_at": {
+    "value": "2026-08-21T12:05:01Z",
+    "provenance": "derived"
+  },
+  "limitations": [
+    "This receipt identifies the exact bytes of the synthetic session artifact. It does not authenticate the AI provider or prove session completeness.",
+    "The receipt creation time is synthetic and is not external timestamp evidence."
+  ]
+}
