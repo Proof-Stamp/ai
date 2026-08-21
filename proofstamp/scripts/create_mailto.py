@@ -26,12 +26,14 @@ def load_receipt(path: Path) -> dict:
 
 
 def build_mailto(artifact_path: Path, receipt_path: Path) -> str:
-    errors = verify(artifact_path, receipt_path)
+    errors, verified_hash, verified_size = verify(artifact_path, receipt_path)
     if errors:
         raise ValueError("ProofStamp verification failed: " + "; ".join(errors))
 
     receipt = load_receipt(receipt_path)
     actual_hash, actual_size = sha256_file(artifact_path)
+    if actual_hash != verified_hash or actual_size != verified_size:
+        raise ValueError("artifact bytes changed during mailto creation")
 
     receipt_hash = receipt.get("fingerprint", {}).get("sha256")
     receipt_size = receipt.get("artifact", {}).get("size_bytes")
