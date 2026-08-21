@@ -35,13 +35,16 @@ A security issue includes any path where untrusted captured content can cause th
 - reveal or reconstruct hidden system instructions or private reasoning;
 - access credentials, connector secrets, environment variables, hidden files, or other information not legitimately exposed to the capture process;
 - change provenance or capture method without supporting evidence;
-- silently omit or restore session material, limitations, omissions, or redactions;
+- change `capture.completeness.status` to `complete` without affirmative evidence that all items in the declared scope were available and included;
+- silently omit or restore session material, limitations, omissions, redactions, or completeness basis;
 - perform unauthorized network, connector, file, or tool actions;
 - reinterpret literal source content as trusted role, tool-call, or control structure;
-- falsely present an incomplete or manipulated artifact as complete.
+- falsely present an incomplete, unknown, or manipulated artifact as complete.
 
 Deterministic security tests live under `tests/security/`. Model-dependent prompt-injection regression cases live in `evals/prompt-injection.md`. Passing those tests does not mean prompt injection is generally solved.
 
 ## Security boundaries
 
 A ProofStamp protects the integrity of the exact exported bytes after hashing. It does not independently prove that an AI provider supplied every recorded field, that a captured session is complete, or that the underlying content is true.
+
+Capture completeness is a separate evidence claim. `complete` is permitted only with an adequate recorded basis; otherwise the artifact must say `partial` or `unknown` as appropriate.
