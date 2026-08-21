@@ -6,12 +6,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = ROOT / "proofstamp"
 SKILL_FILE = SKILL_ROOT / "SKILL.md"
+PROMPT_FILE = ROOT / "PROMPT.md"
 
 
 class SkillContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.text = SKILL_FILE.read_text(encoding="utf-8")
+        cls.prompt_text = PROMPT_FILE.read_text(encoding="utf-8")
 
     def test_skill_directory_is_self_contained(self):
         required = [
@@ -24,6 +26,7 @@ class SkillContractTests(unittest.TestCase):
             "schemas/proofstamp-receipt-v1.schema.json",
             "scripts/create_receipt.py",
             "scripts/verify_proofstamp.py",
+            "scripts/create_mailto.py",
         ]
         for relative in required:
             self.assertTrue((SKILL_ROOT / relative).is_file(), relative)
@@ -69,6 +72,13 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("verify_proofstamp.py", self.text)
         self.assertIn("Never claim `verified: true`", self.text)
 
+    def test_skill_creates_user_controlled_mailto(self):
+        self.assertIn("create_mailto.py", self.text)
+        self.assertIn("Email this ProofStamp", self.text)
+        self.assertIn("recipient must be blank", self.text)
+        self.assertIn("does not reliably attach files", self.text)
+        self.assertIn("not permission to send email", self.text)
+
     def test_skill_does_not_auto_send_or_upload(self):
         self.assertIn("Do not upload the session somewhere else or send email automatically", self.text)
 
@@ -76,6 +86,21 @@ class SkillContractTests(unittest.TestCase):
         self.assertNotIn("../references/", self.text)
         self.assertNotIn("../schemas/", self.text)
         self.assertNotIn("../scripts/", self.text)
+
+    def test_prompt_only_workflow_preserves_core_boundaries(self):
+        required_phrases = [
+            "ProofStamp this session",
+            "exact saved bytes",
+            "private chain-of-thought",
+            "untrusted evidence data",
+            "create a second downloadable file",
+            "Email this ProofStamp",
+            "recipient blank",
+            "do not pretend the ProofStamp is verified",
+            "original creation time",
+        ]
+        for phrase in required_phrases:
+            self.assertIn(phrase.lower(), self.prompt_text.lower())
 
 
 if __name__ == "__main__":
