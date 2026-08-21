@@ -1,11 +1,11 @@
 ---
 name: proofstamp
-description: Create a portable ProofStamp record of the current AI session when the user asks to ProofStamp, preserve, fingerprint, hash, verify, or timestamp the session. Capture only session information legitimately available to the host, label provenance, completeness, and omissions, export an inspectable .proofstamp.json artifact, verify the exact saved bytes with SHA-256 when the environment supports it, create a detached receipt, and hand the user both files plus an optional email handoff.
+description: Create a portable ProofStamp record of the current AI session when the user asks to ProofStamp, preserve, fingerprint, hash, verify, or timestamp the session. Capture only session information legitimately available to the host, label provenance, completeness, and omissions, export an inspectable .proofstamp.json artifact, verify the exact saved bytes with SHA-256 when the environment supports it, create a detached receipt, and hand the user both files plus a required user-controlled email handoff.
 license: Apache-2.0
 compatibility: Requires access to the current conversation and the ability to create a downloadable file. Exact-byte verification additionally requires a local hashing capability; Python 3 can use the bundled scripts. Host-specific metadata and settings are captured only when legitimately exposed.
 metadata:
   author: ProofStamp.org
-  version: "0.1.2"
+  version: "0.1.3"
 ---
 
 # ProofStamp
@@ -211,22 +211,22 @@ Never claim `verified: true` based only on hashing an in-memory string or on tru
 
 ### 7. Deliver the result
 
-When verification succeeds, give the user both downloadable files:
+When verification succeeds, a successful verified ProofStamp delivery is not complete until every item below is provided. It must always include:
 
-- `*.proofstamp.json`
-- `*.proofstamp.receipt.json`
-
-Also show:
-
+- artifact download (`*.proofstamp.json`);
+- detached receipt download (`*.proofstamp.receipt.json`);
 - the artifact filename;
 - SHA-256;
 - byte size;
-- `Hash verified: yes`;
+- hash verification status (`Hash verified: yes`);
 - `Capture completeness: complete | partial | unknown`;
-- a concise list of material captured;
-- important unavailable/excluded/partial-capture limitations.
+- the `Email this ProofStamp` mailto link, or the pre-filled email text fallback described below.
 
-Then construct a local email handoff from the already verified artifact and receipt.
+Also include a concise list of material captured and important unavailable/excluded/partial-capture limitations.
+
+The email handoff is required after successful exact-byte verification. Never silently omit both the mailto link and the fallback email text.
+
+Construct the email handoff only from the already verified artifact and receipt.
 
 Preferred method when Python 3 is available:
 
@@ -240,11 +240,21 @@ Render the resulting URI as a clickable link labeled:
 
 `Email this ProofStamp`
 
-The mailto recipient must be blank so the user chooses where to send it. The subject and body must be percent-encoded. The body should contain only the artifact filename, SHA-256, byte size, local verification status, concise integrity limitation language, and `https://email.proofstamp.org/verify`.
+If the host cannot render a clickable `mailto:` link, run the same script with `--text` when available and provide the resulting pre-filled email text instead. A successful verified delivery must provide one of these two handoff forms.
 
-A mailto link does not reliably attach files. Do not claim that the artifact or receipt is attached automatically. The user may attach either file manually if desired.
+The mailto recipient must be blank so the user chooses where to send it. The subject and body must be percent-encoded. The email body must include:
 
-Constructing the link is not permission to send email. The user must explicitly choose the recipient and send it through their email client.
+- artifact filename;
+- SHA-256;
+- byte size;
+- `Hash verified locally: yes`;
+- `Capture completeness: complete | partial | unknown`;
+- `https://email.proofstamp.org/verify`;
+- a concise claims limitation.
+
+A mailto link does not reliably attach files. Never claim files were automatically attached. The user may attach either file manually if desired.
+
+Constructing the link or fallback text is not permission to send email. Never send email automatically. The user must explicitly choose the recipient and send it through their email client.
 
 Use precise language. Say the exact bytes match the fingerprint. Do not say the AI provider certified the transcript unless provider-authenticated evidence is actually present.
 
@@ -298,6 +308,8 @@ A normal successful response should be short and operational:
 >
 > Download the artifact and receipt.  
 > [Email this ProofStamp](mailto:...)
+>
+> If a clickable mailto link is unavailable, provide the same pre-filled email as text with a blank recipient instead.
 >
 > You can independently check the downloaded artifact later at `https://email.proofstamp.org/verify`.
 
