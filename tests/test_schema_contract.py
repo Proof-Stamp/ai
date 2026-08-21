@@ -8,8 +8,9 @@ from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SESSION_SCHEMA_PATH = ROOT / "schemas" / "proofstamp-session-v1.schema.json"
-RECEIPT_SCHEMA_PATH = ROOT / "schemas" / "proofstamp-receipt-v1.schema.json"
+SKILL_ROOT = ROOT / "proofstamp"
+SESSION_SCHEMA_PATH = SKILL_ROOT / "schemas" / "proofstamp-session-v1.schema.json"
+RECEIPT_SCHEMA_PATH = SKILL_ROOT / "schemas" / "proofstamp-receipt-v1.schema.json"
 SECURITY_FIXTURE_PATH = (
     ROOT / "tests" / "security" / "fixtures" / "prompt-injection-session.proofstamp.json"
 )

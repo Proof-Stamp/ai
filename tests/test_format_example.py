@@ -10,13 +10,14 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SKILL_ROOT = ROOT / "proofstamp"
 EXAMPLE_DIR = ROOT / "examples" / "synthetic-session"
 ARTIFACT = EXAMPLE_DIR / "example-session.proofstamp.json"
 RECEIPT = EXAMPLE_DIR / "example-session.proofstamp.receipt.json"
-SESSION_SCHEMA = ROOT / "schemas" / "proofstamp-session-v1.schema.json"
-RECEIPT_SCHEMA = ROOT / "schemas" / "proofstamp-receipt-v1.schema.json"
-CREATE_SCRIPT = ROOT / "scripts" / "create_receipt.py"
-VERIFY_SCRIPT = ROOT / "scripts" / "verify_proofstamp.py"
+SESSION_SCHEMA = SKILL_ROOT / "schemas" / "proofstamp-session-v1.schema.json"
+RECEIPT_SCHEMA = SKILL_ROOT / "schemas" / "proofstamp-receipt-v1.schema.json"
+CREATE_SCRIPT = SKILL_ROOT / "scripts" / "create_receipt.py"
+VERIFY_SCRIPT = SKILL_ROOT / "scripts" / "verify_proofstamp.py"
 
 
 def load_json(path: Path):
