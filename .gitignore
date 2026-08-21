@@ -3,6 +3,10 @@
 *.proofstamp.receipt.json
 !examples/**/*.proofstamp.json
 !examples/**/*.proofstamp.receipt.json
+!tests/fixtures/**/*.proofstamp.json
+!tests/fixtures/**/*.proofstamp.receipt.json
+!tests/security/fixtures/**/*.proofstamp.json
+!tests/security/fixtures/**/*.proofstamp.receipt.json
 
 # Secrets and local configuration
 .env

@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://proofstamp.org/schemas/proofstamp-receipt-v1.schema.json",
+  "title": "ProofStamp Detached Receipt Format v1",
+  "description": "Detached receipt for a ProofStamp AI session artifact. The receipt identifies the exact artifact bytes by filename, byte length, and SHA-256 fingerprint and records that the fingerprint was recalculated successfully before the receipt was created.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "proofstamp",
+    "artifact",
+    "fingerprint",
+    "verification",
+    "created_at",
+    "limitations"
+  ],
+  "properties": {
+    "proofstamp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "format_version"],
+      "properties": {
+        "format": {
+          "const": "proofstamp-receipt"
+        },
+        "format_version": {
+          "const": "1.0"
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["filename", "size_bytes", "format", "format_version"],
+      "properties": {
+        "filename": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\.proofstamp\\.json$"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "format": {
+          "const": "proofstamp-session"
+        },
+        "format_version": {
+          "const": "1.0"
+        }
+      }
+    },
+    "fingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "sha256"],
+      "properties": {
+        "algorithm": {
+          "const": "SHA-256"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verified", "recalculated_sha256", "method"],
+      "properties": {
+        "verified": {
+          "const": true,
+          "description": "A detached receipt is created only after the saved artifact is read back and its SHA-256 is recalculated successfully."
+        },
+        "recalculated_sha256": {
+          "$ref": "#/$defs/sha256",
+          "description": "Must equal fingerprint.sha256. Equality is enforced by the implementation and tests because JSON Schema cannot express this cross-field equality portably."
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Short description of how the second hash calculation was performed."
+        }
+      }
+    },
+    "created_at": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "provenance"],
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "provenance": {
+          "enum": ["host_exposed", "tool_result", "model_reported", "derived"]
+        }
+      },
+      "description": "Receipt-generation time as available to the implementation. This is not itself a trusted external timestamp."
+    },
+    "external_time_evidence": {
+      "type": "array",
+      "description": "Optional references to later external systems that recorded the same fingerprint, such as an email receipt. These references do not change the artifact fingerprint.",
+      "items": {
+        "$ref": "#/$defs/timeEvidence"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "timeEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "reference"],
+      "properties": {
+        "type": {
+          "enum": ["email", "blockchain", "signed_service", "other"]
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recorded_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
