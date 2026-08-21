@@ -121,8 +121,11 @@ class FormatExampleTests(unittest.TestCase):
             artifact_copy.write_bytes(ARTIFACT.read_bytes())
             receipt_copy.write_bytes(RECEIPT.read_bytes())
 
-            mutated = bytearray(artifact_copy.read_bytes())
-            mutated[0] ^= 1
+            original = artifact_copy.read_bytes()
+            needle = b"ExampleChat"
+            position = original.index(needle)
+            mutated = bytearray(original)
+            mutated[position + len("Example")] = ord("X")
             artifact_copy.write_bytes(mutated)
 
             result = subprocess.run(
@@ -139,6 +142,7 @@ class FormatExampleTests(unittest.TestCase):
             )
             self.assertNotEqual(0, result.returncode)
             self.assertIn("Verification failed", result.stderr)
+            self.assertIn("SHA-256 does not match", result.stderr)
 
     def test_artifact_does_not_self_embed_its_receipt_hash(self):
         artifact_text = ARTIFACT.read_text(encoding="utf-8")
