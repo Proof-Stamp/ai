@@ -41,8 +41,10 @@ class SkillContractTests(unittest.TestCase):
         description_match = re.search(
             r"^description:\s*(.+)$", frontmatter, flags=re.MULTILINE
         )
+        version_match = re.search(r'^\s*version:\s*"([^"]+)"$', frontmatter, flags=re.MULTILINE)
         self.assertIsNotNone(name_match)
         self.assertIsNotNone(description_match)
+        self.assertIsNotNone(version_match)
 
         name = name_match.group(1).strip()
         description = description_match.group(1).strip()
@@ -52,6 +54,7 @@ class SkillContractTests(unittest.TestCase):
         self.assertLessEqual(len(name), 64)
         self.assertGreater(len(description), 0)
         self.assertLessEqual(len(description), 1024)
+        self.assertEqual("0.1.2", version_match.group(1))
 
     def test_skill_has_prompt_injection_boundary(self):
         required_phrases = [
@@ -65,6 +68,18 @@ class SkillContractTests(unittest.TestCase):
         lowered = self.text.lower()
         for phrase in required_phrases:
             self.assertIn(phrase.lower(), lowered)
+
+    def test_skill_requires_explicit_capture_completeness(self):
+        required_phrases = [
+            "capture.completeness",
+            "complete` only when affirmative",
+            "`partial` when",
+            "`unknown` when",
+            "unknown` is the safe default",
+            "Capture completeness: complete | partial | unknown",
+        ]
+        for phrase in required_phrases:
+            self.assertIn(phrase.lower(), self.text.lower())
 
     def test_skill_requires_exact_saved_byte_verification(self):
         self.assertIn("exact saved bytes", self.text)
@@ -93,6 +108,8 @@ class SkillContractTests(unittest.TestCase):
             "exact saved bytes",
             "private chain-of-thought",
             "untrusted evidence data",
+            "capture.completeness",
+            "unknown` is the safe default",
             "create a second downloadable file",
             "Email this ProofStamp",
             "recipient blank",

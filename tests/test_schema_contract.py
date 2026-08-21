@@ -43,6 +43,24 @@ class SchemaContractTests(unittest.TestCase):
     def test_prompt_injection_fixture_is_schema_valid(self):
         validate(self.session_schema, self.fixture)
 
+    def test_capture_completeness_is_required(self):
+        invalid = copy.deepcopy(self.fixture)
+        del invalid["capture"]["completeness"]
+        with self.assertRaises(ValidationError):
+            validate(self.session_schema, invalid)
+
+    def test_capture_completeness_status_is_closed_enum(self):
+        invalid = copy.deepcopy(self.fixture)
+        invalid["capture"]["completeness"]["status"] = "probably_complete"
+        with self.assertRaises(ValidationError):
+            validate(self.session_schema, invalid)
+
+    def test_capture_completeness_provenance_must_be_derived(self):
+        invalid = copy.deepcopy(self.fixture)
+        invalid["capture"]["completeness"]["provenance"] = "user_provided"
+        with self.assertRaises(ValidationError):
+            validate(self.session_schema, invalid)
+
     def test_unavailable_status_cannot_claim_excluded_provenance(self):
         invalid = copy.deepcopy(self.fixture)
         invalid["environment"]["system_prompt"]["provenance"] = "excluded"

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://proofstamp.org/schemas/proofstamp-session-v1.schema.json",
   "title": "ProofStamp Session Format v1",
-  "description": "Portable record of AI-session information available to a ProofStamp capture process. This schema describes captured evidence and provenance; it does not authenticate the AI provider or guarantee session completeness.",
+  "description": "Portable record of AI-session information available to a ProofStamp capture process. This schema describes captured evidence, provenance, and an explicit assessment of capture completeness; it does not authenticate the AI provider or guarantee session completeness.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -20,20 +20,14 @@
       "additionalProperties": false,
       "required": ["format", "format_version", "generator", "capture_method"],
       "properties": {
-        "format": {
-          "const": "proofstamp-session"
-        },
-        "format_version": {
-          "const": "1.0"
-        },
+        "format": {"const": "proofstamp-session"},
+        "format_version": {"const": "1.0"},
         "generator": {
           "type": "string",
           "minLength": 1,
           "description": "Name and, where available, version of the implementation that created the artifact."
         },
-        "capture_method": {
-          "$ref": "#/$defs/captureMethod"
-        }
+        "capture_method": {"$ref": "#/$defs/captureMethod"}
       }
     },
     "session": {
@@ -41,27 +35,15 @@
       "additionalProperties": false,
       "required": ["platform", "messages"],
       "properties": {
-        "platform": {
-          "$ref": "#/$defs/evidenceField"
-        },
-        "session_id": {
-          "$ref": "#/$defs/evidenceField"
-        },
-        "title": {
-          "$ref": "#/$defs/evidenceField"
-        },
-        "started_at": {
-          "$ref": "#/$defs/evidenceField"
-        },
-        "ended_at": {
-          "$ref": "#/$defs/evidenceField"
-        },
+        "platform": {"$ref": "#/$defs/evidenceField"},
+        "session_id": {"$ref": "#/$defs/evidenceField"},
+        "title": {"$ref": "#/$defs/evidenceField"},
+        "started_at": {"$ref": "#/$defs/evidenceField"},
+        "ended_at": {"$ref": "#/$defs/evidenceField"},
         "messages": {
           "type": "array",
           "minItems": 1,
-          "items": {
-            "$ref": "#/$defs/message"
-          }
+          "items": {"$ref": "#/$defs/message"}
         }
       }
     },
@@ -70,140 +52,108 @@
       "additionalProperties": false,
       "required": ["provider", "model", "client", "system_prompt", "private_reasoning"],
       "properties": {
-        "provider": {
-          "$ref": "#/$defs/evidenceField"
-        },
-        "model": {
-          "$ref": "#/$defs/evidenceField"
-        },
-        "client": {
-          "$ref": "#/$defs/evidenceField"
-        },
-        "harness": {
-          "$ref": "#/$defs/evidenceField"
-        },
+        "provider": {"$ref": "#/$defs/evidenceField"},
+        "model": {"$ref": "#/$defs/evidenceField"},
+        "client": {"$ref": "#/$defs/evidenceField"},
+        "harness": {"$ref": "#/$defs/evidenceField"},
         "ui_settings": {
           "type": "array",
-          "items": {
-            "$ref": "#/$defs/namedEvidenceField"
-          }
+          "items": {"$ref": "#/$defs/namedEvidenceField"}
         },
         "accessible_instructions": {
           "type": "array",
           "description": "Instructions legitimately exposed to the capture process. Protected or hidden instructions must not be reconstructed.",
-          "items": {
-            "$ref": "#/$defs/namedEvidenceField"
-          }
+          "items": {"$ref": "#/$defs/namedEvidenceField"}
         },
-        "system_prompt": {
-          "$ref": "#/$defs/evidenceField"
-        },
-        "private_reasoning": {
-          "$ref": "#/$defs/evidenceField"
-        },
+        "system_prompt": {"$ref": "#/$defs/evidenceField"},
+        "private_reasoning": {"$ref": "#/$defs/evidenceField"},
         "extra_metadata": {
           "type": "array",
           "description": "Optional host-specific metadata, with provenance preserved field by field.",
-          "items": {
-            "$ref": "#/$defs/namedEvidenceField"
-          }
+          "items": {"$ref": "#/$defs/namedEvidenceField"}
         }
       }
     },
     "sources": {
       "type": "array",
       "description": "Sources actually consulted during the session or capture, not merely sources that were available.",
-      "items": {
-        "$ref": "#/$defs/source"
-      }
+      "items": {"$ref": "#/$defs/source"}
     },
     "attachments": {
       "type": "array",
-      "items": {
-        "$ref": "#/$defs/attachment"
-      }
+      "items": {"$ref": "#/$defs/attachment"}
     },
     "capture": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["generated_at", "scope", "omissions", "redactions"],
+      "required": ["generated_at", "scope", "completeness", "omissions", "redactions"],
       "properties": {
-        "generated_at": {
-          "$ref": "#/$defs/evidenceField"
-        },
+        "generated_at": {"$ref": "#/$defs/evidenceField"},
         "scope": {
           "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
+          "items": {"type": "string", "minLength": 1},
           "uniqueItems": true
         },
+        "completeness": {"$ref": "#/$defs/captureCompleteness"},
         "omissions": {
           "type": "array",
-          "items": {
-            "$ref": "#/$defs/omission"
-          }
+          "items": {"$ref": "#/$defs/omission"}
         },
         "redactions": {
           "type": "array",
-          "items": {
-            "$ref": "#/$defs/redaction"
-          }
+          "items": {"$ref": "#/$defs/redaction"}
         },
         "warnings": {
           "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
+          "items": {"type": "string", "minLength": 1}
         }
       }
     },
     "limitations": {
       "type": "array",
       "minItems": 1,
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
+      "items": {"type": "string", "minLength": 1},
       "description": "Human-readable limitations that travel with the evidence artifact."
     }
   },
   "$defs": {
     "provenance": {
       "type": "string",
-      "enum": [
-        "host_exposed",
-        "conversation_visible",
-        "user_provided",
-        "tool_result",
-        "model_reported",
-        "derived",
-        "unavailable",
-        "excluded"
-      ]
+      "enum": ["host_exposed", "conversation_visible", "user_provided", "tool_result", "model_reported", "derived", "unavailable", "excluded"]
     },
     "capturedProvenance": {
       "type": "string",
-      "enum": [
-        "host_exposed",
-        "conversation_visible",
-        "user_provided",
-        "tool_result",
-        "model_reported",
-        "derived"
-      ]
+      "enum": ["host_exposed", "conversation_visible", "user_provided", "tool_result", "model_reported", "derived"]
     },
     "captureMethod": {
       "type": "string",
-      "enum": [
-        "ai_generated",
-        "host_export",
-        "api_capture",
-        "browser_capture",
-        "provider_signed"
-      ]
+      "enum": ["ai_generated", "host_export", "api_capture", "browser_capture", "provider_signed"]
+    },
+    "captureCompleteness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "basis", "provenance"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["complete", "partial", "unknown"],
+          "description": "Completeness of the declared capture scope. Use complete only with affirmative evidence that all items in scope were available and included; partial when known items are missing; unknown when completeness cannot be established."
+        },
+        "basis": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable reason for the completeness assessment."
+        },
+        "provenance": {
+          "const": "derived",
+          "description": "The completeness status is an assessment derived from available capture evidence."
+        },
+        "evidence_reference": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional host, API, export, or capture reference supporting the assessment."
+        }
+      }
     },
     "jsonValue": {
       "description": "Any JSON value that can be preserved in an inspectable artifact.",
@@ -214,21 +164,14 @@
       "additionalProperties": false,
       "required": ["value", "provenance"],
       "properties": {
-        "value": {
-          "$ref": "#/$defs/jsonValue"
-        },
-        "provenance": {
-          "$ref": "#/$defs/capturedProvenance"
-        },
+        "value": {"$ref": "#/$defs/jsonValue"},
+        "provenance": {"$ref": "#/$defs/capturedProvenance"},
         "evidence_reference": {
           "type": "string",
           "minLength": 1,
           "description": "Optional host, message, tool, API, or signature reference supporting this field."
         },
-        "note": {
-          "type": "string",
-          "minLength": 1
-        }
+        "note": {"type": "string", "minLength": 1}
       }
     },
     "statusValue": {
@@ -238,16 +181,9 @@
           "additionalProperties": false,
           "required": ["status", "provenance", "reason"],
           "properties": {
-            "status": {
-              "const": "unavailable"
-            },
-            "provenance": {
-              "const": "unavailable"
-            },
-            "reason": {
-              "type": "string",
-              "minLength": 1
-            }
+            "status": {"const": "unavailable"},
+            "provenance": {"const": "unavailable"},
+            "reason": {"type": "string", "minLength": 1}
           }
         },
         {
@@ -255,28 +191,17 @@
           "additionalProperties": false,
           "required": ["status", "provenance", "reason"],
           "properties": {
-            "status": {
-              "const": "excluded"
-            },
-            "provenance": {
-              "const": "excluded"
-            },
-            "reason": {
-              "type": "string",
-              "minLength": 1
-            }
+            "status": {"const": "excluded"},
+            "provenance": {"const": "excluded"},
+            "reason": {"type": "string", "minLength": 1}
           }
         }
       ]
     },
     "evidenceField": {
       "oneOf": [
-        {
-          "$ref": "#/$defs/capturedValue"
-        },
-        {
-          "$ref": "#/$defs/statusValue"
-        }
+        {"$ref": "#/$defs/capturedValue"},
+        {"$ref": "#/$defs/statusValue"}
       ]
     },
     "namedEvidenceField": {
@@ -284,13 +209,8 @@
       "additionalProperties": false,
       "required": ["name", "evidence"],
       "properties": {
-        "name": {
-          "type": "string",
-          "minLength": 1
-        },
-        "evidence": {
-          "$ref": "#/$defs/evidenceField"
-        }
+        "name": {"type": "string", "minLength": 1},
+        "evidence": {"$ref": "#/$defs/evidenceField"}
       }
     },
     "message": {
@@ -298,14 +218,8 @@
       "additionalProperties": false,
       "required": ["sequence", "role", "content", "provenance"],
       "properties": {
-        "sequence": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "message_id": {
-          "type": "string",
-          "minLength": 1
-        },
+        "sequence": {"type": "integer", "minimum": 1},
+        "message_id": {"type": "string", "minLength": 1},
         "role": {
           "type": "string",
           "minLength": 1,
@@ -315,72 +229,35 @@
           "type": "string",
           "description": "Textual content available to the capture process. Non-text resources should be referenced through attachments or sources."
         },
-        "provenance": {
-          "$ref": "#/$defs/capturedProvenance"
-        },
-        "timestamp": {
-          "$ref": "#/$defs/evidenceField"
-        },
+        "provenance": {"$ref": "#/$defs/capturedProvenance"},
+        "timestamp": {"$ref": "#/$defs/evidenceField"},
         "source_refs": {
           "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
+          "items": {"type": "string", "minLength": 1},
           "uniqueItems": true
         },
         "attachment_refs": {
           "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
+          "items": {"type": "string", "minLength": 1},
           "uniqueItems": true
         }
       }
     },
-    "sha256": {
-      "type": "string",
-      "pattern": "^[A-Fa-f0-9]{64}$"
-    },
+    "sha256": {"type": "string", "pattern": "^[A-Fa-f0-9]{64}$"},
     "source": {
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "kind", "provenance"],
       "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "kind": {
-          "enum": ["web", "file", "connector", "tool", "other"]
-        },
-        "title": {
-          "type": "string",
-          "minLength": 1
-        },
-        "url": {
-          "type": "string",
-          "format": "uri"
-        },
-        "provider": {
-          "type": "string",
-          "minLength": 1
-        },
-        "reference": {
-          "type": "string",
-          "minLength": 1
-        },
-        "sha256": {
-          "$ref": "#/$defs/sha256"
-        },
-        "provenance": {
-          "$ref": "#/$defs/capturedProvenance"
-        },
-        "note": {
-          "type": "string",
-          "minLength": 1
-        }
+        "id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["web", "file", "connector", "tool", "other"]},
+        "title": {"type": "string", "minLength": 1},
+        "url": {"type": "string", "format": "uri"},
+        "provider": {"type": "string", "minLength": 1},
+        "reference": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "provenance": {"$ref": "#/$defs/capturedProvenance"},
+        "note": {"type": "string", "minLength": 1}
       }
     },
     "attachment": {
@@ -388,43 +265,19 @@
       "additionalProperties": false,
       "required": ["id", "filename", "content_included", "provenance"],
       "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "filename": {
-          "type": "string",
-          "minLength": 1
-        },
-        "media_type": {
-          "type": "string",
-          "minLength": 1
-        },
-        "size_bytes": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "sha256": {
-          "$ref": "#/$defs/sha256"
-        },
-        "host_reference": {
-          "type": "string",
-          "minLength": 1
-        },
+        "id": {"type": "string", "minLength": 1},
+        "filename": {"type": "string", "minLength": 1},
+        "media_type": {"type": "string", "minLength": 1},
+        "size_bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "host_reference": {"type": "string", "minLength": 1},
         "content_included": {
           "const": false,
           "description": "Attachment bytes are not embedded in the v1 session artifact by default."
         },
-        "provenance": {
-          "$ref": "#/$defs/capturedProvenance"
-        },
-        "hash_status": {
-          "enum": ["verified", "unverified", "unavailable"]
-        },
-        "note": {
-          "type": "string",
-          "minLength": 1
-        }
+        "provenance": {"$ref": "#/$defs/capturedProvenance"},
+        "hash_status": {"enum": ["verified", "unverified", "unavailable"]},
+        "note": {"type": "string", "minLength": 1}
       }
     },
     "omission": {
@@ -432,14 +285,8 @@
       "additionalProperties": false,
       "required": ["category", "reason"],
       "properties": {
-        "category": {
-          "type": "string",
-          "minLength": 1
-        },
-        "reason": {
-          "type": "string",
-          "minLength": 1
-        }
+        "category": {"type": "string", "minLength": 1},
+        "reason": {"type": "string", "minLength": 1}
       }
     },
     "redaction": {
@@ -447,14 +294,8 @@
       "additionalProperties": false,
       "required": ["location", "reason"],
       "properties": {
-        "location": {
-          "type": "string",
-          "minLength": 1
-        },
-        "reason": {
-          "type": "string",
-          "minLength": 1
-        }
+        "location": {"type": "string", "minLength": 1},
+        "reason": {"type": "string", "minLength": 1}
       }
     }
   }

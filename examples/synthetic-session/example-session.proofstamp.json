@@ -149,6 +149,12 @@
       "sources actually consulted",
       "attachment metadata"
     ],
+    "completeness": {
+      "status": "complete",
+      "basis": "The synthetic host fixture explicitly defines the complete set of items in the declared capture scope, and all of those items are included in this example.",
+      "provenance": "derived",
+      "evidence_reference": "synthetic-host-metadata"
+    },
     "omissions": [
       {
         "category": "system_prompt",
@@ -166,8 +172,9 @@
   },
   "limitations": [
     "This synthetic artifact demonstrates the ProofStamp Session Format v1 and is not evidence of a real AI session.",
+    "The completeness status is supported only by the synthetic fixture definition; it is not a provider-authenticated claim about a real session.",
     "The recorded host and model metadata are synthetic and do not represent provider-authenticated claims.",
     "The attachment bytes are not included and no attachment fingerprint is available.",
-    "A matching SHA-256 proves integrity relative to the recorded fingerprint, not truth or session completeness."
+    "A matching SHA-256 proves integrity relative to the recorded fingerprint, not truth or provider authenticity."
   ]
 }

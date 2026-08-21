@@ -1,3 +1,4 @@
+import json
 import shutil
 import subprocess
 import sys
@@ -35,13 +36,14 @@ class MailtoHandoffTests(unittest.TestCase):
         query = parse_qs(parsed.query, strict_parsing=True)
         self.assertEqual([f"ProofStamp: {ARTIFACT.name}"], query["subject"])
 
+        receipt = json.loads(RECEIPT.read_text(encoding="utf-8"))
+        expected_hash = receipt["fingerprint"]["sha256"]
+        expected_size = receipt["artifact"]["size_bytes"]
+
         body = query["body"][0]
         self.assertIn(f"File: {ARTIFACT.name}", body)
-        self.assertIn(
-            "SHA-256: 1e103f563ddc475aea7ccd5fe56210f47722b3bcffdd8db07c2cd515dea7783d",
-            body,
-        )
-        self.assertIn("Size: 5120 bytes", body)
+        self.assertIn(f"SHA-256: {expected_hash}", body)
+        self.assertIn(f"Size: {expected_size} bytes", body)
         self.assertIn("Hash verified locally: yes", body)
         self.assertIn("https://email.proofstamp.org/verify", body)
         self.assertIn("does not prove when the underlying AI conversation originally occurred", body)

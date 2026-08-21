@@ -8,12 +8,14 @@ ProofStamp is designed to run across AI hosts with different capabilities. The s
 
 The host can:
 
-- access the visible conversation needed for capture;
+- access conversation content needed for capture;
 - create a downloadable file;
 - read the exact saved bytes;
 - compute SHA-256 or run the bundled Python scripts.
 
-This environment can complete the normal v1 workflow and create a verified detached receipt.
+This environment can complete the normal v1 integrity workflow and create a verified detached receipt.
+
+This does **not** automatically establish that the session capture is complete. Completeness is a separate capability/evidence question.
 
 ### B. Artifact creation but no exact-byte verification
 
@@ -31,17 +33,28 @@ Do not present a Markdown code block or pasted JSON as equivalent to a verified 
 
 Explain the capability limitation instead.
 
-## Conversation visibility
+## Conversation visibility and completeness
 
 Hosts may expose:
 
-- the complete visible conversation;
+- the complete visible conversation together with affirmative metadata that establishes completeness;
+- the currently available context without any completeness signal;
 - only the current context window;
 - a summarized or truncated history;
 - message IDs or timestamps;
 - no stable session identifier.
 
-Record only what is actually available. If earlier visible history is unavailable to the capture process, disclose a partial capture in `capture.omissions` and `limitations`.
+Record only what is actually available.
+
+Set `capture.completeness` as follows:
+
+- `complete` only when affirmative host/API/export/capture evidence supports that every item inside the declared `capture.scope` was available and included;
+- `partial` when the host or capture process makes it known that in-scope history is missing, truncated, failed to hydrate, or otherwise omitted;
+- `unknown` when the capture process cannot establish whether all in-scope material was available and included.
+
+For `ai_generated` capture, `unknown` is the safe default unless an independent host signal supports `complete`. The model's own impression that it can see the whole conversation is not sufficient.
+
+If earlier visible history is unavailable to the capture process, disclose the missing material in `capture.omissions` and `limitations` as well as using `partial` when that absence is known.
 
 Do not use memory, inference, or a reconstructed summary to represent inaccessible messages as exact transcript content.
 
@@ -63,6 +76,8 @@ Some hosts may expose reproducible instructions to the capture process, while pr
 Only include instructions that are legitimately exposed and permitted to be reproduced. Never infer protected instructions from behavior.
 
 If protected instructions cannot be included, mark the system prompt unavailable and disclose the omission.
+
+Protected system instructions and private reasoning can be intentionally outside the declared capture scope. Their exclusion does not by itself force `capture.completeness.status` to `partial`, but the exclusions must remain explicit.
 
 ## Sources and tools
 
@@ -103,7 +118,8 @@ Do not upload the session or call external timestamp services automatically. The
 
 The artifact and final response should make capability limits visible. Prefer statements such as:
 
-- `Visible conversation available from message 12 onward; earlier history unavailable to capture.`
+- `Capture completeness: unknown; the host exposed the current conversation context but no affirmative completeness signal.`
+- `Capture completeness: partial; visible conversation available from message 12 onward and earlier history is unavailable.`
 - `Attachment bytes unavailable; no attachment fingerprint recorded.`
 - `Model name is model-reported, not host-authenticated.`
 - `Exact-byte hashing unavailable in this host; no verified receipt created.`

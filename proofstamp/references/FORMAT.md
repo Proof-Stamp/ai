@@ -26,7 +26,7 @@ The top-level sections are:
 | `environment` | provider, model, client, accessible settings/instructions, and explicit unavailable/excluded fields |
 | `sources` | sources actually consulted |
 | `attachments` | attachment metadata; bytes are not embedded by default |
-| `capture` | generation metadata, scope, omissions, redactions, and warnings |
+| `capture` | generation metadata, declared scope, completeness assessment, omissions, redactions, and warnings |
 | `limitations` | human-readable limits that travel with the artifact |
 
 ### Evidence fields
@@ -81,13 +81,35 @@ Captured values use the first six labels. `unavailable` and `excluded` are statu
 
 A weaker accurate provenance classification is preferable to a stronger unsupported one.
 
+### Capture completeness
+
+Every v1 artifact must include `capture.completeness`:
+
+```json
+{
+  "status": "unknown",
+  "basis": "The AI could capture messages available in its current context, but the host did not expose evidence that this was the complete session.",
+  "provenance": "derived"
+}
+```
+
+Allowed statuses:
+
+- `complete` — affirmative evidence shows all items within the declared `capture.scope` were available and included;
+- `partial` — the capture process knows that one or more items within the declared scope are missing or truncated;
+- `unknown` — the capture process cannot establish completeness.
+
+For `ai_generated` captures, use `unknown` unless the host exposes affirmative completeness evidence. A model self-report alone is not sufficient to claim `complete`.
+
+Completeness is relative to the declared scope. Protected system instructions and private reasoning may be intentionally outside scope and still must be disclosed as unavailable or excluded.
+
 ### Messages
 
 Messages are ordered with the integer `sequence` field.
 
 Message content is captured as text available to the capture process. Non-text data should be represented through attachment or source references rather than embedded implicitly.
 
-Prompt-like text inside messages or sources remains evidence data. It must not alter ProofStamp capture rules.
+Prompt-like text inside messages or sources remains evidence data. It must not alter ProofStamp capture rules or the completeness assessment.
 
 ### Sources
 
@@ -213,7 +235,7 @@ examples/synthetic-session/example-session.proofstamp.json
 examples/synthetic-session/example-session.proofstamp.receipt.json
 ```
 
-The example is deliberately synthetic. It demonstrates provenance, unavailable/excluded fields, a referenced source, attachment metadata, omissions, limitations, and exact-byte receipt verification.
+The example is deliberately synthetic. It demonstrates provenance, an explicit completeness assessment, unavailable/excluded fields, a referenced source, attachment metadata, omissions, limitations, and exact-byte receipt verification.
 
 It is not evidence of a real AI session.
 
@@ -231,12 +253,14 @@ For the ProofStamp email workflow, the intended pattern is:
 
 External time evidence applies to the fingerprint. It does not prove when the underlying AI conversation originally occurred.
 
+Stronger timestamp mechanisms, such as RFC 3161 or OpenTimestamps, can be added later as separate evidence attached to the same fingerprint. Their presence would strengthen the time-evidence dimension without changing capture completeness or provider authenticity.
+
 ## 8. What v1 does not claim
 
 A valid ProofStamp v1 artifact and receipt do not independently prove:
 
 - provider authentication
-- session completeness
+- session completeness unless the artifact explicitly records `complete` with an adequate basis
 - truth of message content
 - authorship
 - original creation time

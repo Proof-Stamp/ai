@@ -40,6 +40,13 @@ class FormatExampleTests(unittest.TestCase):
         errors = sorted(validator.iter_errors(self.artifact), key=lambda error: list(error.path))
         self.assertEqual([], errors, "\n".join(error.message for error in errors))
 
+    def test_synthetic_example_has_explicit_completeness_basis(self):
+        completeness = self.artifact["capture"]["completeness"]
+        self.assertEqual("complete", completeness["status"])
+        self.assertEqual("derived", completeness["provenance"])
+        self.assertIn("synthetic", completeness["basis"].lower())
+        self.assertEqual("synthetic-host-metadata", completeness["evidence_reference"])
+
     def test_checked_in_receipt_validates(self):
         validator = Draft202012Validator(
             self.receipt_schema,
