@@ -1,88 +1,104 @@
 # Release preparation
 
-Target: **`v0.1.2` pre-release**
+Target: **`v0.1.3` pre-release**
 
-This is the first planned public ProofStamp AI pre-release after prior-art review and capture-completeness hardening.
+This is a small post-release hardening release. It makes the user-controlled email handoff part of every successful exact-byte-verified ProofStamp delivery and prepares the public repository for skill-directory discovery.
 
 ## Release blockers
 
-Do not tag or publish the release until all checked items below are complete.
+Do not tag or publish the release until all unchecked items below are complete.
 
-- [ ] Release-hardening PR is merged to `main`.
-- [ ] GitHub Actions `tests` passes on the final PR head and on merged `main`.
-- [ ] Synthetic `.proofstamp.json` and detached receipt verify against exact checked-in bytes.
-- [ ] Prompt-injection fixture confirms captured instructions cannot upgrade provenance or capture completeness.
-- [ ] Run the model-dependent cases in `evals/prompt-injection.md` on at least one supported AI host and record the result.
-- [ ] Run `PROMPT.md` from a fresh conversation with no prior ProofStamp context and confirm it produces a valid artifact/receipt or fails narrowly when host capabilities are missing.
-- [ ] Run the installed `proofstamp/` skill from a fresh conversation and confirm the final response reports `Capture completeness` explicitly.
-- [ ] Decide whether the known `ProofStamp` naming collisions require additional trademark/legal review before substantial promotion. See `docs/PRIOR-ART.md`.
-- [ ] Confirm `main` branch protection still requires the `tests` status check.
+- [x] Skill metadata is `0.1.3` on `main`.
+- [x] PR #7 is merged: required email handoff after successful exact-byte verification.
+- [x] PR #8 is merged: directory-ready README and one-command `skills` CLI install instructions.
+- [x] GitHub Actions `tests` passed on the PR #8 head.
+- [ ] GitHub Actions `tests` passes on the final `main` commit selected for the tag.
+- [ ] Run one fresh-host delivery smoke test and confirm a successful verified delivery includes either the clickable `Email this ProofStamp` link or the pre-filled email text fallback.
+- [ ] Create tag `v0.1.3` from the exact tested `main` commit.
+- [ ] Publish the GitHub pre-release.
+- [ ] Run a post-release install smoke test from the public repository/tag with the `skills` CLI.
+- [ ] After the tag exists, pin the short prompt in `PROMPT.md` from `v0.1.2` to `v0.1.3` in a separate post-release housekeeping PR.
 
 ## Proposed tag
 
 ```text
-v0.1.2
+v0.1.3
 ```
 
-The Agent Skill metadata in `proofstamp/SKILL.md` must match `0.1.2` before tagging.
+The Agent Skill metadata in `proofstamp/SKILL.md` is `0.1.3` and must remain so at the tagged commit.
 
 ## Proposed release title
 
 ```text
-ProofStamp AI v0.1.2 — first public pre-release
+ProofStamp AI v0.1.3 — required email handoff
 ```
 
 ## Proposed release notes
 
-ProofStamp AI v0.1.2 is the first public pre-release of an open session-evidence workflow for AI conversations.
+ProofStamp AI v0.1.3 is a focused delivery-contract hardening release.
 
-### Included
+### What changed
 
-- installable `proofstamp` Agent Skill;
-- prompt-only workflow for hosts where users do not want to install a skill;
-- portable `.proofstamp.json` session format and detached receipt schema;
-- explicit field-level provenance and unavailable/excluded states;
-- explicit `capture.completeness` status: `complete`, `partial`, or `unknown`;
-- safe default of `unknown` for AI-generated captures unless affirmative host evidence supports completeness;
-- exact saved-byte SHA-256 hashing and independent re-verification;
-- synthetic example and deterministic verification scripts;
-- user-controlled `mailto:` handoff after successful verification;
-- prompt-injection security fixtures and behavioral eval cases;
-- trust model, privacy rules, disclaimer, and prior-art review.
+After a ProofStamp artifact is successfully exact-byte verified, the delivery must now include all of the following:
 
-### What v0.1.2 does not claim
+- downloadable `.proofstamp.json` artifact;
+- downloadable detached `.proofstamp.receipt.json` receipt;
+- artifact filename;
+- SHA-256;
+- byte size;
+- hash verification status;
+- capture completeness: `complete`, `partial`, or `unknown`;
+- user-controlled email handoff.
 
-ProofStamp does not automatically prove that a conversation is complete, provider-authenticated, true, legally admissible, or originally created at a particular time.
+The preferred handoff is a clickable **Email this ProofStamp** `mailto:` link. If the host cannot render a clickable mailto link, it must provide the pre-filled email text instead. A successful verified delivery must never silently omit both.
 
-A valid exact-byte receipt proves that the selected artifact bytes match the recorded SHA-256. Capture provenance, completeness, external time evidence, and provider identity are separate evidence dimensions.
+The email handoff contains the artifact filename, SHA-256, byte size, `Hash verified locally: yes`, capture completeness, `https://email.proofstamp.org/verify`, and concise limitation language. The recipient remains blank.
 
-### Current capture strength
+`proofstamp/scripts/create_mailto.py` now supports `--text` to generate the fallback email text and rejects handoff creation if the artifact does not contain a valid capture-completeness status.
 
-The first skill implementation primarily uses `capture_method: ai_generated`. Browser/API/host-export/provider-signed integrations are future stronger capture paths.
+### Safety boundaries retained
 
-### External time evidence
-
-The current normal-user handoff supports email-based evidence for the fingerprint. RFC 3161 and OpenTimestamps are documented as potential stronger timestamp adapters, not implemented in this release.
+- ProofStamp never claims that files were attached automatically.
+- ProofStamp never sends email automatically.
+- The SHA-256 claim is about exact-byte integrity, not truth, authenticity, authorship, provider certification, or original creation time.
+- Capture completeness remains an independent evidence dimension and is not upgraded by the email handoff.
 
 ### Compatibility
 
-Agent Skill hosts must expose the current conversation and support creation of a stable downloadable file. Exact-byte verified receipts additionally require the host to read back the saved file bytes and compute SHA-256.
+There is no schema redesign and no receipt-format, hashing-algorithm, provenance-vocabulary, or completeness-semantics change.
 
-If those capabilities are unavailable, the skill must disclose the limitation rather than fabricate a verified ProofStamp.
+The existing command remains compatible:
 
-## Tagging procedure after blockers are cleared
+```bash
+python proofstamp/scripts/create_mailto.py <artifact> <receipt>
+```
 
-1. Merge the release-hardening PR.
-2. Confirm `main` CI is green.
-3. Create annotated tag `v0.1.2` from the exact tested `main` commit.
+It still returns a `mailto:` URI. The new `--text` option is additive.
+
+The intentional behavior change is contractual: after successful exact-byte verification, the host must provide either the mailto link or fallback email text.
+
+### Directory discovery
+
+The README now includes the public install command:
+
+```bash
+npx skills add https://github.com/Proof-Stamp/ai --skill proofstamp
+```
+
+Current skills.sh documentation states that leaderboard/directory discovery is driven automatically by observed `skills` CLI installs rather than by a separate submission pull request.
+
+## Tagging procedure
+
+1. Confirm the final `main` GitHub Actions `tests` run is green.
+2. Run one fresh-host delivery smoke test for the required email handoff.
+3. Create tag `v0.1.3` from that exact `main` commit.
 4. Publish a GitHub **pre-release** using the release notes above.
-5. Replace prompt examples that reference `main` with the immutable `v0.1.2` URL where reproducibility matters.
-6. Perform one post-release install/prompt smoke test from the tag.
+5. Run the public `skills` CLI install smoke test.
+6. Open the small post-release housekeeping PR that pins `PROMPT.md` to the immutable `v0.1.3` tag.
 
-## Post-release priorities
+## Directory submission after release
 
-- record platform-specific behavioral eval results;
-- explore browser/API capture for stronger completeness evidence;
-- evaluate optional RFC 3161 and OpenTimestamps adapters;
-- investigate provider-signed transcript compatibility;
-- decide on naming/trademark risk before broader commercial promotion.
+- **skills.sh:** no separate submission PR is required. Run/install the public repository through the `skills` CLI so it can enter install-driven discovery.
+- **Agent Skill Exchange:** submit a catalog PR under `skills/proofstamp/SKILL.md`, category `Security & Verification`, framework `Multi-Framework`, verification `listed`, source `https://github.com/Proof-Stamp/ai`.
+
+The Agent Skill Exchange submission is a catalog wrapper. The canonical runtime skill remains `proofstamp/SKILL.md` in this repository.
