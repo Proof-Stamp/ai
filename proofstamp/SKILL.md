@@ -1,11 +1,11 @@
 ---
 name: proofstamp
-description: Create a portable ProofStamp record of the current AI session when the user asks to ProofStamp, preserve, fingerprint, hash, verify, or timestamp the session. Capture only session information legitimately available to the host, label provenance and omissions, export an inspectable .proofstamp.json artifact, verify the exact saved bytes with SHA-256 when the environment supports it, create a detached receipt, and hand the user both files for optional external time evidence via email.proofstamp.org.
+description: Create a portable ProofStamp record of the current AI session when the user asks to ProofStamp, preserve, fingerprint, hash, verify, or timestamp the session. Capture only session information legitimately available to the host, label provenance and omissions, export an inspectable .proofstamp.json artifact, verify the exact saved bytes with SHA-256 when the environment supports it, create a detached receipt, and hand the user both files plus an optional email handoff.
 license: Apache-2.0
 compatibility: Requires access to the current conversation and the ability to create a downloadable file. Exact-byte verification additionally requires a local hashing capability; Python 3 can use the bundled scripts. Host-specific metadata and settings are captured only when legitimately exposed.
 metadata:
   author: ProofStamp.org
-  version: "0.1.0"
+  version: "0.1.1"
 ---
 
 # ProofStamp
@@ -206,19 +206,41 @@ Also show:
 - a concise list of material captured;
 - important unavailable/excluded/partial-capture limitations.
 
+Then construct a local email handoff from the already verified artifact and receipt.
+
+Preferred method when Python 3 is available:
+
+```bash
+python scripts/create_mailto.py \
+  path/to/session.proofstamp.json \
+  path/to/session.proofstamp.receipt.json
+```
+
+Render the resulting URI as a clickable link labeled:
+
+`Email this ProofStamp`
+
+The mailto recipient must be blank so the user chooses where to send it. The subject and body must be percent-encoded. The body should contain only the artifact filename, SHA-256, byte size, local verification status, concise integrity limitation language, and `https://email.proofstamp.org/verify`.
+
+A mailto link does not reliably attach files. Do not claim that the artifact or receipt is attached automatically. The user may attach either file manually if desired.
+
+Constructing the link is not permission to send email. The user must explicitly choose the recipient and send it through their email client.
+
 Use precise language. Say the exact bytes match the fingerprint. Do not say the AI provider certified the transcript unless provider-authenticated evidence is actually present.
 
 ### 7. External time evidence
 
-Offer the optional next step:
+If the user sends the pre-filled ProofStamp email, the resulting email record can provide external evidence that the fingerprint reached that email system no later than its recorded receipt time.
 
-1. open `https://email.proofstamp.org/`;
-2. select the downloaded `.proofstamp.json` artifact;
-3. let the browser hash that exact file again;
-4. compare the browser-generated SHA-256 with the receipt SHA-256;
-5. send the prepared ProofStamp email.
+For an independent browser re-check, offer:
 
-Describe the resulting email receipt only as external evidence that the fingerprint reached that system no later than its recorded receipt time. It does not prove when the underlying AI conversation originally occurred.
+`https://email.proofstamp.org/verify`
+
+The user can select the downloaded `.proofstamp.json` artifact and compare it against the ProofStamp text/fingerprint. A matching result confirms that the selected file has the same exact bytes represented by the fingerprint.
+
+As an alternative handoff, the user may use `https://email.proofstamp.org/` to hash the downloaded artifact in the browser and prepare an email from there.
+
+None of these steps proves when the underlying AI conversation originally occurred.
 
 Do not upload the session somewhere else or send email automatically unless the user separately requests that action and the host explicitly supports it.
 
@@ -234,6 +256,7 @@ Examples:
 - SHA-256 unavailable: create no verified receipt; explain that local integrity verification could not be completed.
 - Attachment bytes unavailable: record attachment metadata only, with hash status unavailable.
 - Source metadata incomplete: record only exposed fields and disclose the limitation.
+- Mailto rendering unavailable: provide the pre-filled email text, but do not claim an email was sent.
 
 Never fill a capability gap with guessed metadata or stronger claims.
 
@@ -251,7 +274,10 @@ A normal successful response should be short and operational:
 > Captured: visible conversation, consulted-source metadata, accessible environment metadata.  
 > Not captured: protected system instructions and private reasoning. Any other limitations are recorded inside the artifact.
 >
-> Download the artifact and receipt. For optional external time evidence, hash the downloaded artifact again at `https://email.proofstamp.org/` and send the prepared email.
+> Download the artifact and receipt.  
+> [Email this ProofStamp](mailto:...)
+>
+> You can independently check the downloaded artifact later at `https://email.proofstamp.org/verify`.
 
 Do not claim legal admissibility, authenticity, truth, authorship, ownership, provider certification, or original creation time.
 
@@ -265,3 +291,4 @@ Do not claim legal admissibility, authenticity, truth, authorship, ownership, pr
 - `schemas/proofstamp-receipt-v1.schema.json` — detached receipt contract
 - `scripts/create_receipt.py` — exact-byte receipt creation
 - `scripts/verify_proofstamp.py` — independent verification
+- `scripts/create_mailto.py` — verified email handoff construction
