@@ -1,0 +1,22 @@
+# ProofStamp session artifacts are private by default.
+*.proofstamp.json
+*.proofstamp.receipt.json
+!examples/**/*.proofstamp.json
+!examples/**/*.proofstamp.receipt.json
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
