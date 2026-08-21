@@ -1,6 +1,8 @@
 # ProofStamp AI
 
-ProofStamp AI is an open Agent Skill and prompt workflow for creating a portable, inspectable record of the current AI session, hashing the exact exported bytes with SHA-256, verifying that fingerprint, and preparing the fingerprint for optional external time evidence.
+[![skills.sh](https://skills.sh/b/proof-stamp/ai)](https://skills.sh/proof-stamp/ai)
+
+ProofStamp AI is an open Agent Skill and prompt workflow for creating a portable, inspectable record of the current AI session, hashing the exact exported bytes with SHA-256, verifying that fingerprint, and preparing the fingerprint for user-controlled external time evidence.
 
 The intended user command is:
 
@@ -8,15 +10,27 @@ The intended user command is:
 
 ## Status
 
-**Release candidate for `v0.1.2` pre-release.**
+**Current skill metadata: `0.1.3`.**
 
-The v1 trust model, schemas, reference scripts, synthetic example, security tests, prompt-only workflow, email handoff, prior-art review, and capture-completeness rules are implemented. Final release steps are tracked in `RELEASE.md`.
+The v1 trust model, schemas, reference scripts, synthetic example, security tests, prompt-only workflow, required email handoff, prior-art review, and capture-completeness rules are implemented.
 
 The installable skill lives in:
 
 `proofstamp/`
 
 Its directory name matches the Agent Skills `name: proofstamp` manifest requirement.
+
+## Quick install
+
+With the Vercel `skills` CLI:
+
+```bash
+npx skills add https://github.com/Proof-Stamp/ai --skill proofstamp
+```
+
+The `skills.sh` directory lists skills automatically after installs are observed through the CLI. No separate skills.sh submission PR is required.
+
+You can also install the `proofstamp/` directory manually in any Agent Skills-compatible host.
 
 ## What it does
 
@@ -33,7 +47,7 @@ The detached receipt records the artifact filename, byte size, SHA-256 fingerpri
 
 The skill captures only information legitimately available to the current AI environment. Missing or protected information is marked unavailable or excluded rather than reconstructed.
 
-After successful verification, the workflow can create a pre-filled `mailto:` link containing the filename, SHA-256, byte size, verification status, limitation text, and the ProofStamp verification URL. The user chooses the recipient and sends the email. Files are not attached automatically by `mailto:`.
+After successful verification, the workflow must provide a user-controlled email handoff. Prefer a clickable `Email this ProofStamp` `mailto:` link. If the host cannot render a clickable mailto link, provide the pre-filled email text instead. The handoff includes the filename, SHA-256, byte size, local verification status, capture completeness, concise limitation text, and the ProofStamp verification URL. The recipient remains blank, the user sends the email, and files are never claimed to be attached automatically.
 
 ## What it does not claim
 
@@ -71,8 +85,8 @@ Yes. A user can use ProofStamp with a normal prompt.
 
 See `PROMPT.md` for two options:
 
-- a short prompt that tells the AI to fetch and follow the current public `proofstamp/SKILL.md`;
-- a standalone prompt that embeds the core capture, completeness, security, hashing, receipt, and mailto requirements.
+- a short prompt that tells the AI to fetch and follow a public `proofstamp/SKILL.md`;
+- a standalone prompt that embeds the core capture, completeness, security, hashing, receipt, and email-handoff requirements.
 
 Prompt-only use is less repeatable than an installed skill because different hosts may interpret the prompt differently or lack access to downloadable files, exact saved bytes, hashing, schemas, session metadata, or completeness evidence. For stronger reproducibility, use the installed skill or pin the prompt to a tagged release/commit.
 
@@ -121,7 +135,7 @@ Create a fresh receipt for a `.proofstamp.json` artifact:
 python proofstamp/scripts/create_receipt.py path/to/session.proofstamp.json
 ```
 
-Create a pre-filled email handoff only after the artifact/receipt pair verifies:
+Create the required email handoff only after the artifact/receipt pair verifies:
 
 ```bash
 python proofstamp/scripts/create_mailto.py \
@@ -129,7 +143,16 @@ python proofstamp/scripts/create_mailto.py \
   path/to/session.proofstamp.receipt.json
 ```
 
-The receipt creation, verification, and mailto scripts use only the Python standard library.
+If a clickable mailto link cannot be rendered, create fallback email text instead:
+
+```bash
+python proofstamp/scripts/create_mailto.py \
+  path/to/session.proofstamp.json \
+  path/to/session.proofstamp.receipt.json \
+  --text
+```
+
+The receipt creation, verification, and email-handoff scripts use only the Python standard library.
 
 Development/schema tests use the dependency in `requirements-dev.txt`.
 
@@ -144,7 +167,7 @@ Development/schema tests use the dependency in `requirements-dev.txt`.
 7. It writes the final `.proofstamp.json` artifact.
 8. It hashes the exact saved bytes with SHA-256 and independently recalculates the digest.
 9. It creates a detached `.proofstamp.receipt.json` only after verification succeeds.
-10. It gives the user both downloadable files and a pre-filled **Email this ProofStamp** `mailto:` link.
+10. It gives the user both downloadable files and a required email handoff: the **Email this ProofStamp** `mailto:` link, or pre-filled email text if a clickable link cannot be rendered.
 11. The user chooses the recipient and sends the email. Standard `mailto:` does not attach the files automatically.
 12. The user can later select the downloaded artifact at `https://email.proofstamp.org/verify` and compare it against the ProofStamp text/fingerprint.
 13. As an alternative, the user may use `https://email.proofstamp.org/` to hash the downloaded artifact in the browser and prepare the email there.
