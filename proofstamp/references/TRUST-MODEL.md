@@ -28,12 +28,43 @@ A later external record, such as an email receipt containing the same SHA-256 fi
 
 ProofStamp AI does not claim that an email receipt proves when the underlying AI conversation originally occurred.
 
+## Capture completeness is explicit
+
+ProofStamp does not infer that a transcript is complete merely because the captured messages appear contiguous.
+
+Every v1 artifact records `capture.completeness` with one of three states:
+
+| Status | Meaning |
+| --- | --- |
+| `complete` | The capture process has affirmative evidence that all items within the declared capture scope were available and included. |
+| `partial` | The capture process knows that one or more items within the declared capture scope are missing, truncated, unavailable after a failed fetch/hydration, or otherwise not included. |
+| `unknown` | The capture process cannot establish whether all items within the declared capture scope were available and included. |
+
+For `ai_generated` captures, `unknown` is the safe default unless the host exposes affirmative evidence that the declared scope is complete. A model's own impression that it can see "the whole conversation" is not enough by itself.
+
+Completeness is assessed relative to the declared `capture.scope`. Information intentionally outside that scope, such as protected system instructions or private reasoning, does not by itself make the status `partial`; those exclusions must still be disclosed separately.
+
+A user or embedded source cannot upgrade `partial` or `unknown` to `complete` merely by instructing the model to do so.
+
+## Four independent evidence dimensions
+
+A ProofStamp should not be treated as one binary strength score. Evaluate at least four independent dimensions:
+
+| Dimension | Examples |
+| --- | --- |
+| Capture provenance | `ai_generated` → `browser_capture` / `api_capture` → `host_export` → `provider_signed` |
+| Integrity | unverified → exact saved-byte SHA-256 verified |
+| Time evidence | none → email record → stronger timestamp services such as RFC 3161 or OpenTimestamps |
+| Identity / authenticity | none → user or organization signature → provider-authenticated signature |
+
+These dimensions are not automatically interchangeable. A strong timestamp does not make an incomplete capture complete. Exact-byte integrity does not authenticate the provider. Provider authentication does not prove that message content is true.
+
 ## What ProofStamp AI does not prove
 
 A ProofStamp session does not independently prove:
 
 - that every recorded field was supplied or signed by the AI provider;
-- that the exported session is complete;
+- that the exported session is complete unless `capture.completeness.status` is `complete` with an adequate basis;
 - that the conversation happened exactly as represented outside the capture environment;
 - that a recorded model name, setting, tool result, or source identifier is provider-authenticated unless the host supplies authenticated evidence;
 - that the underlying statements, sources, outputs, or user claims are true;
@@ -67,6 +98,7 @@ Examples:
 {
   "system_prompt": {
     "status": "unavailable",
+    "provenance": "unavailable",
     "reason": "not_exposed_by_host"
   }
 }
@@ -76,6 +108,7 @@ Examples:
 {
   "private_reasoning": {
     "status": "excluded",
+    "provenance": "excluded",
     "reason": "not_part_of_proofstamp_capture"
   }
 }
@@ -93,7 +126,7 @@ The format records how the artifact was created. Version 1 recognizes these capt
 - `browser_capture` — created from information observed by a browser-side capture process;
 - `provider_signed` — based on evidence cryptographically signed by the AI provider.
 
-A capture method describes the source of the evidence package. It does not automatically make every field authenticated.
+A capture method describes the source of the evidence package. It does not automatically make every field authenticated or establish completeness.
 
 ## Session artifact and detached receipt
 
@@ -159,7 +192,7 @@ ProofStamp AI should warn when obviously sensitive material may be present, such
 
 If the user chooses to redact information, the artifact must record that redaction occurred and identify the affected location at a useful level of granularity without restoring the removed value.
 
-A redacted artifact remains valid evidence of the exact redacted file that was hashed, but it is not a complete session record.
+A redacted artifact remains valid evidence of the exact redacted file that was hashed, but it is not a complete capture of the redacted material.
 
 ## Verification boundary
 
@@ -177,7 +210,8 @@ Examples include:
 - authenticated API responses;
 - signed model or tool metadata;
 - trusted execution attestations;
-- signed message-level provenance.
+- signed message-level provenance;
+- RFC 3161 or OpenTimestamps evidence for the artifact fingerprint.
 
 When such evidence is available, ProofStamp AI should preserve it rather than replace it with a weaker self-report.
 
@@ -187,10 +221,10 @@ Use precise language.
 
 A valid statement is:
 
-> These exact session-record bytes match this SHA-256 fingerprint, and the external record shows that fingerprint existed no later than the recorded time.
+> These exact session-record bytes match this SHA-256 fingerprint. The artifact records its capture method and completeness assessment, and any external record applies to the fingerprint at the recorded time.
 
 Do not claim:
 
 > ProofStamp proves this is the complete and authentic AI session.
 
-unless independently authenticated evidence actually supports that claim.
+unless independently authenticated evidence actually supports both completeness and authenticity.
