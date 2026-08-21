@@ -54,7 +54,7 @@ class SkillContractTests(unittest.TestCase):
         self.assertLessEqual(len(name), 64)
         self.assertGreater(len(description), 0)
         self.assertLessEqual(len(description), 1024)
-        self.assertEqual("0.1.2", version_match.group(1))
+        self.assertEqual("0.1.3", version_match.group(1))
 
     def test_skill_has_prompt_injection_boundary(self):
         required_phrases = [
@@ -87,12 +87,26 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("verify_proofstamp.py", self.text)
         self.assertIn("Never claim `verified: true`", self.text)
 
-    def test_skill_creates_user_controlled_mailto(self):
-        self.assertIn("create_mailto.py", self.text)
-        self.assertIn("Email this ProofStamp", self.text)
-        self.assertIn("recipient must be blank", self.text)
-        self.assertIn("does not reliably attach files", self.text)
-        self.assertIn("not permission to send email", self.text)
+    def test_skill_requires_email_handoff_after_verified_delivery(self):
+        required_phrases = [
+            "successful verified ProofStamp delivery is not complete",
+            "artifact download",
+            "detached receipt download",
+            "Email this ProofStamp",
+            "email handoff is required after successful exact-byte verification",
+            "Never silently omit both the mailto link and the fallback email text",
+            "pre-filled email text",
+            "recipient must be blank",
+            "Hash verified locally: yes",
+            "Capture completeness: complete | partial | unknown",
+            "https://email.proofstamp.org/verify",
+            "Never claim files were automatically attached",
+            "Never send email automatically",
+        ]
+        lowered = self.text.lower()
+        for phrase in required_phrases:
+            self.assertIn(phrase.lower(), lowered)
+        self.assertNotIn("optional email handoff", lowered)
 
     def test_skill_does_not_auto_send_or_upload(self):
         self.assertIn("Do not upload the session somewhere else or send email automatically", self.text)

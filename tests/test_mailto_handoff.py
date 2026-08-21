@@ -12,16 +12,37 @@ ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT = ROOT / "examples" / "synthetic-session" / "example-session.proofstamp.json"
 RECEIPT = ROOT / "examples" / "synthetic-session" / "example-session.proofstamp.receipt.json"
 MAILTO_SCRIPT = ROOT / "proofstamp" / "scripts" / "create_mailto.py"
+RECEIPT_SCRIPT = ROOT / "proofstamp" / "scripts" / "create_receipt.py"
 
 
 class MailtoHandoffTests(unittest.TestCase):
-    def run_mailto(self, artifact: Path, receipt: Path):
+    def run_mailto(self, artifact: Path, receipt: Path, *extra_args: str):
         return subprocess.run(
-            [sys.executable, str(MAILTO_SCRIPT), str(artifact), str(receipt)],
+            [
+                sys.executable,
+                str(MAILTO_SCRIPT),
+                str(artifact),
+                str(receipt),
+                *extra_args,
+            ],
             cwd=ROOT,
             capture_output=True,
             text=True,
             check=False,
+        )
+
+    def create_receipt(self, artifact: Path) -> Path:
+        result = subprocess.run(
+            [sys.executable, str(RECEIPT_SCRIPT), str(artifact)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        return artifact.with_name(
+            artifact.name.removesuffix(".proofstamp.json")
+            + ".proofstamp.receipt.json"
         )
 
     def test_verified_example_creates_prefilled_mailto(self):
@@ -45,12 +66,64 @@ class MailtoHandoffTests(unittest.TestCase):
         self.assertIn(f"SHA-256: {expected_hash}", body)
         self.assertIn(f"Size: {expected_size} bytes", body)
         self.assertIn("Hash verified locally: yes", body)
+        self.assertIn("Capture completeness: complete", body)
         self.assertIn("https://email.proofstamp.org/verify", body)
-        self.assertIn("does not prove when the underlying AI conversation originally occurred", body)
+        self.assertIn("does not prove truth, authenticity", body)
 
         # The handoff contains fingerprint metadata, not captured session contents.
         self.assertNotIn("ExampleChat", body)
         self.assertNotIn("Prepare a project handoff", body)
+
+    def test_prefilled_text_fallback_has_blank_recipient_and_required_fields(self):
+        result = self.run_mailto(ARTIFACT, RECEIPT, "--text")
+        self.assertEqual(0, result.returncode, result.stderr)
+
+        text = result.stdout
+        self.assertTrue(text.startswith("To:\nSubject: ProofStamp:"))
+        self.assertIn(f"File: {ARTIFACT.name}", text)
+        self.assertIn("SHA-256:", text)
+        self.assertIn("Size:", text)
+        self.assertIn("Hash verified locally: yes", text)
+        self.assertIn("Capture completeness: complete", text)
+        self.assertIn("https://email.proofstamp.org/verify", text)
+        self.assertIn("does not prove truth, authenticity", text)
+
+    def test_mailto_includes_each_allowed_capture_completeness_status(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for status in ("complete", "partial", "unknown"):
+                with self.subTest(status=status):
+                    artifact_copy = Path(temp_dir) / f"{status}.proofstamp.json"
+                    data = json.loads(ARTIFACT.read_text(encoding="utf-8"))
+                    data["capture"]["completeness"]["status"] = status
+                    artifact_copy.write_text(
+                        json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+                        encoding="utf-8",
+                    )
+                    receipt_copy = self.create_receipt(artifact_copy)
+
+                    result = self.run_mailto(artifact_copy, receipt_copy)
+                    self.assertEqual(0, result.returncode, result.stderr)
+                    body = parse_qs(
+                        urlparse(result.stdout.strip()).query,
+                        strict_parsing=True,
+                    )["body"][0]
+                    self.assertIn(f"Capture completeness: {status}", body)
+
+    def test_invalid_capture_completeness_refuses_handoff(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            artifact_copy = Path(temp_dir) / "invalid.proofstamp.json"
+            data = json.loads(ARTIFACT.read_text(encoding="utf-8"))
+            data["capture"]["completeness"]["status"] = "bogus"
+            artifact_copy.write_text(
+                json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            receipt_copy = self.create_receipt(artifact_copy)
+
+            result = self.run_mailto(artifact_copy, receipt_copy)
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("capture completeness", result.stderr.lower())
+            self.assertEqual("", result.stdout.strip())
 
     def test_mutated_artifact_refuses_mailto(self):
         with tempfile.TemporaryDirectory() as temp_dir:
