@@ -1,0 +1,69 @@
+import json
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS = ROOT / "proofstamp" / "scripts"
+EXAMPLE = ROOT / "examples" / "synthetic-session" / "example-session.proofstamp.json"
+
+
+class ClaudeOptimizedFlowTests(unittest.TestCase):
+    def test_stdlib_validator_accepts_synthetic_session(self):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / "validate_proofstamp.py"), str(EXAMPLE)],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("schema validation passed", result.stdout)
+
+    def test_finalizer_validates_creates_receipt_verifies_and_builds_handoff(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact = Path(tmp) / "synthetic-proofstamp-test-2026-08-24.proofstamp.json"
+            artifact.write_bytes(EXAMPLE.read_bytes())
+            result = subprocess.run(
+                [sys.executable, str(SCRIPTS / "finalize_proofstamp.py"), str(artifact)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            output = json.loads(result.stdout)
+            self.assertEqual("passed", output["schema_validation"])
+            self.assertIs(True, output["hash_verified"])
+            self.assertIn(output["capture_completeness"], {"complete", "partial", "unknown"})
+            self.assertTrue(output["mailto"].startswith("mailto:?subject="))
+            receipt = artifact.with_name("synthetic-proofstamp-test-2026-08-24.proofstamp.receipt.json")
+            self.assertTrue(receipt.is_file())
+
+            validate_receipt = subprocess.run(
+                [sys.executable, str(SCRIPTS / "validate_proofstamp.py"), str(receipt)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(0, validate_receipt.returncode, validate_receipt.stderr)
+
+    def test_validator_rejects_missing_required_field(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact = Path(tmp) / "invalid.proofstamp.json"
+            value = json.loads(EXAMPLE.read_text(encoding="utf-8"))
+            del value["capture"]["completeness"]
+            artifact.write_text(json.dumps(value), encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPTS / "validate_proofstamp.py"), str(artifact)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+            )
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("missing required property 'completeness'", result.stderr)
+
+
+if __name__ == "__main__":
+    unittest.main()
