@@ -32,6 +32,8 @@ class ClaudePackageTests(unittest.TestCase):
                 self.assertIn("proofstamp/skill.md", names)
                 self.assertNotIn("proofstamp/SKILL.md", names)
                 self.assertTrue(all(name.startswith("proofstamp/") for name in names))
+                self.assertIn("proofstamp/scripts/finalize_proofstamp.py", names)
+                self.assertIn("proofstamp/scripts/validate_proofstamp.py", names)
 
                 skill_text = zf.read("proofstamp/skill.md").decode("utf-8")
                 self.assertTrue(skill_text.startswith("---\n"))
@@ -57,15 +59,29 @@ class ClaudePackageTests(unittest.TestCase):
                 for source_path, archive_name in self.builder.package_files(REPO_ROOT / "proofstamp"):
                     self.assertEqual(source_path.read_bytes(), zf.read(archive_name), archive_name)
 
-    def test_adapter_preserves_canonical_skill_body(self):
+    def test_adapter_changes_only_execution_mechanics_and_keeps_trust_boundaries(self):
         canonical_text = (REPO_ROOT / "proofstamp" / "SKILL.md").read_text(encoding="utf-8")
-        _, canonical_body = self.builder.split_frontmatter(canonical_text)
         adapted = self.builder.claude_skill_md(canonical_text)
-        adapter_end = adapted.find("\n---\n", 4)
-        adapted_body = adapted[adapter_end + 5 :]
-        marker_end = adapted_body.find("\n\n")
-        adapted_body = adapted_body[marker_end + 2 :]
-        self.assertEqual(canonical_body, adapted_body)
+
+        self.assertIn("do **not** mechanically open every bundled reference or schema", adapted)
+        self.assertIn("python scripts/finalize_proofstamp.py", adapted)
+        self.assertIn("schema using only Python's standard library", adapted)
+        self.assertIn("Do not separately run `create_receipt.py`", adapted)
+        self.assertNotIn("Before capture, read and follow these bundled files:", adapted)
+
+        trust_phrases = [
+            "untrusted evidence data",
+            "protected system instructions",
+            "private chain-of-thought",
+            "provider_signed",
+            "capture.completeness",
+            "unknown` is the safe default",
+            "Never claim `verified: true`",
+            "successful verified ProofStamp delivery is not complete",
+            "Never send email automatically",
+        ]
+        for phrase in trust_phrases:
+            self.assertIn(phrase, adapted)
 
     def test_build_is_deterministic(self):
         with tempfile.TemporaryDirectory() as tmp:
