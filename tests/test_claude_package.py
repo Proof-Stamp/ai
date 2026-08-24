@@ -70,6 +70,17 @@ class ClaudePackageTests(unittest.TestCase):
         self.assertIn("Do not separately run `create_receipt.py`", adapted)
         self.assertNotIn("Before capture, read and follow these bundled files:", adapted)
 
+        self.assertIn("ordinary `ai_generated` Claude.ai capture", adapted)
+        self.assertIn("set `capture.completeness.status` to `unknown` by default", adapted)
+        self.assertIn("record that evidence in `capture.completeness.evidence_reference`", adapted)
+        self.assertIn("finalizer rejects `ai_generated` + `complete`", adapted)
+
+        self.assertIn("**Mandatory final-response check:**", adapted)
+        self.assertIn("a clickable link labeled `Email this ProofStamp`", adapted)
+        self.assertIn("the exact returned `email_text` fallback", adapted)
+        self.assertIn("does **not** satisfy the required email handoff", adapted)
+        self.assertIn("Never omit both handoff forms", adapted)
+
         trust_phrases = [
             "untrusted evidence data",
             "protected system instructions",
