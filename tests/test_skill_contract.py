@@ -54,7 +54,7 @@ class SkillContractTests(unittest.TestCase):
         self.assertLessEqual(len(name), 64)
         self.assertGreater(len(description), 0)
         self.assertLessEqual(len(description), 1024)
-        self.assertEqual("0.1.4", version_match.group(1))
+        self.assertEqual("0.1.5", version_match.group(1))
 
     def test_skill_has_prompt_injection_boundary(self):
         required_phrases = [
