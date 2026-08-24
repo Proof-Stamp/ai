@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = ROOT / "proofstamp"
 SKILL_FILE = SKILL_ROOT / "SKILL.md"
 PROMPT_FILE = ROOT / "PROMPT.md"
+README_FILE = ROOT / "README.md"
 
 
 class SkillContractTests(unittest.TestCase):
@@ -14,6 +15,7 @@ class SkillContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.text = SKILL_FILE.read_text(encoding="utf-8")
         cls.prompt_text = PROMPT_FILE.read_text(encoding="utf-8")
+        cls.readme_text = README_FILE.read_text(encoding="utf-8")
 
     def test_skill_directory_is_self_contained(self):
         required = [
@@ -30,6 +32,15 @@ class SkillContractTests(unittest.TestCase):
         ]
         for relative in required:
             self.assertTrue((SKILL_ROOT / relative).is_file(), relative)
+
+    def skill_version(self):
+        match = re.match(r"---\n(.*?)\n---\n", self.text, flags=re.DOTALL)
+        self.assertIsNotNone(match)
+        version_match = re.search(
+            r'^\s*version:\s*"([^"]+)"$', match.group(1), flags=re.MULTILINE
+        )
+        self.assertIsNotNone(version_match)
+        return version_match.group(1)
 
     def test_agent_skill_frontmatter(self):
         self.assertTrue(self.text.startswith("---\n"))
@@ -48,13 +59,20 @@ class SkillContractTests(unittest.TestCase):
 
         name = name_match.group(1).strip()
         description = description_match.group(1).strip()
+        version = version_match.group(1)
         self.assertEqual("proofstamp", name)
         self.assertEqual(SKILL_ROOT.name, name)
         self.assertRegex(name, r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
         self.assertLessEqual(len(name), 64)
         self.assertGreater(len(description), 0)
         self.assertLessEqual(len(description), 1024)
-        self.assertEqual("0.1.6", version_match.group(1))
+        self.assertRegex(version, r"^\d+\.\d+\.\d+$")
+
+    def test_release_entry_points_match_skill_version(self):
+        version = self.skill_version()
+        self.assertIn(f"/v{version}/proofstamp/SKILL.md", self.prompt_text)
+        self.assertIn(f"pinned to the `v{version}` release", self.prompt_text)
+        self.assertIn(f"Current skill metadata: `{version}`", self.readme_text)
 
     def test_skill_has_prompt_injection_boundary(self):
         required_phrases = [
