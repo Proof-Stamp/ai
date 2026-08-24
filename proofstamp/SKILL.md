@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires access to the current conversation and the ability to create a downloadable file. Exact-byte verification additionally requires a local hashing capability; Python 3 can use the bundled scripts. Host-specific metadata and settings are captured only when legitimately exposed.
 metadata:
   author: ProofStamp.org
-  version: "0.1.3"
+  version: "0.1.4"
 ---
 
 # ProofStamp
