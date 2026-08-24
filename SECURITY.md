@@ -4,7 +4,9 @@ ProofStamp AI handles material that may contain private conversations, source re
 
 ## Supported versions
 
-The project is pre-release. Until the first tagged release, security fixes apply to the current `main` branch.
+ProofStamp AI is still pre-1.0 and may change quickly. Security fixes are supported for the current `main` branch and the latest published release.
+
+Older pre-1.0 releases may not receive backports. When reporting an issue, include the affected release tag or commit so maintainers can determine whether the current version is also affected.
 
 ## Reporting a vulnerability
 
