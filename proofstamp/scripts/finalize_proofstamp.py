@@ -14,15 +14,55 @@ from validate_proofstamp import RECEIPT_SCHEMA, SESSION_SCHEMA, validate_file
 from verify_proofstamp import verify
 
 
-def completeness_status(artifact_path: Path) -> str:
+def load_artifact(artifact_path: Path) -> dict:
     value = json.loads(artifact_path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError("artifact root must be a JSON object")
+    return value
+
+
+def completeness_status(artifact_path: Path) -> str:
+    value = load_artifact(artifact_path)
     return value["capture"]["completeness"]["status"]
+
+
+def validate_capture_semantics(artifact_path: Path) -> list[str]:
+    """Enforce trust rules that JSON Schema alone cannot express."""
+    value = load_artifact(artifact_path)
+    errors: list[str] = []
+
+    proofstamp = value.get("proofstamp")
+    capture = value.get("capture")
+    if not isinstance(proofstamp, dict) or not isinstance(capture, dict):
+        return errors
+
+    completeness = capture.get("completeness")
+    if not isinstance(completeness, dict):
+        return errors
+
+    if (
+        proofstamp.get("capture_method") == "ai_generated"
+        and completeness.get("status") == "complete"
+    ):
+        evidence_reference = completeness.get("evidence_reference")
+        if not isinstance(evidence_reference, str) or not evidence_reference.strip():
+            errors.append(
+                "ai_generated capture cannot claim completeness 'complete' without an explicit "
+                "capture.completeness.evidence_reference to separate host/API/export evidence; "
+                "use 'unknown' when completeness cannot be established"
+            )
+
+    return errors
 
 
 def finalize(artifact: Path, *, force: bool = False) -> dict:
     session_errors = validate_file(artifact, SESSION_SCHEMA)
     if session_errors:
         raise ValueError("session schema validation failed: " + "; ".join(session_errors))
+
+    semantic_errors = validate_capture_semantics(artifact)
+    if semantic_errors:
+        raise ValueError("capture trust validation failed: " + "; ".join(semantic_errors))
 
     receipt_path = default_receipt_path(artifact)
     if receipt_path.exists() and not force:
@@ -41,16 +81,25 @@ def finalize(artifact: Path, *, force: bool = False) -> dict:
         receipt_path.unlink(missing_ok=True)
         raise ValueError("exact-byte verification failed: " + "; ".join(verification_errors))
 
+    mailto = build_mailto(artifact, receipt_path)
+    email_text = build_email_text(artifact, receipt_path)
+
     return {
         "artifact": artifact.name,
         "receipt": receipt_path.name,
         "sha256": actual_hash,
         "bytes": actual_size,
         "schema_validation": "passed",
+        "capture_trust_validation": "passed",
         "hash_verified": True,
         "capture_completeness": completeness_status(artifact),
-        "mailto": build_mailto(artifact, receipt_path),
-        "email_text": build_email_text(artifact, receipt_path),
+        "email_handoff_required": True,
+        "mailto": mailto,
+        "email_text": email_text,
+        "delivery_instruction": (
+            "Final response must include Email this ProofStamp using the returned mailto URI; "
+            "if mailto cannot be rendered, include the returned email_text fallback."
+        ),
     }
 
 
