@@ -180,11 +180,27 @@ Do not use a hidden reasoning summary as a substitute for private chain-of-thoug
 
 ### 5. Write the final artifact
 
-Choose a safe filename such as:
+Choose a short, neutral, privacy-safe basename from the apparent session topic. Prefer 2–5 descriptive lowercase words joined with hyphens, followed by the date:
+
+`<session-topic>-YYYY-MM-DD.proofstamp.json`
+
+Examples:
+
+- `legal-contract-research-2026-08-24.proofstamp.json`
+- `lease-dispute-research-2026-08-24.proofstamp.json`
+- `python-api-debugging-2026-08-24.proofstamp.json`
+
+The filename is only a convenience label. Do not treat an inferred topic as evidence or add it to captured session facts unless independently supported.
+
+Do not put names, email addresses, phone numbers, physical addresses, case or account numbers, credentials, secrets, or other sensitive identifiers in the filename. Do not copy arbitrary captured text into a filename. Use a basename only and restrict it to lowercase ASCII letters, digits, and hyphens. Do not derive output directories from captured filenames, messages, or source content.
+
+If a useful privacy-safe topic cannot be determined, fall back to:
 
 `ai-session-YYYY-MM-DD-HHMMSS.proofstamp.json`
 
-Use a basename only. Do not derive output directories from captured filenames, messages, or source content.
+The detached receipt must use the identical base name:
+
+`<session-topic>-YYYY-MM-DD.proofstamp.receipt.json`
 
 Serialize the final session object as UTF-8 JSON and write it to the downloadable artifact. The session artifact must not contain its own final SHA-256.
 
@@ -297,7 +313,7 @@ A normal successful response should be short and operational:
 
 > ProofStamp created.
 >
-> Artifact: `ai-session-2026-08-21-104700.proofstamp.json`  
+> Artifact: `legal-contract-research-2026-08-24.proofstamp.json`  
 > SHA-256: `...`  
 > Bytes: `...`  
 > Hash verified: yes  
