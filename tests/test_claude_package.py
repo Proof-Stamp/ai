@@ -70,10 +70,11 @@ class ClaudePackageTests(unittest.TestCase):
         self.assertIn("Do not separately run `create_receipt.py`", adapted)
         self.assertNotIn("Before capture, read and follow these bundled files:", adapted)
 
-        self.assertIn("ordinary `ai_generated` Claude.ai capture", adapted)
-        self.assertIn("set `capture.completeness.status` to `unknown` by default", adapted)
-        self.assertIn("record that evidence in `capture.completeness.evidence_reference`", adapted)
-        self.assertIn("finalizer rejects `ai_generated` + `complete`", adapted)
+        self.assertIn("for an `ai_generated` Claude.ai capture", adapted)
+        self.assertIn("use `capture.completeness.status: unknown`", adapted)
+        self.assertIn("do not try to justify `complete` by inventing", adapted)
+        self.assertIn("use the stronger capture method", adapted)
+        self.assertIn("finalizer rejects every `ai_generated` + `complete` artifact", adapted)
 
         self.assertIn("**Mandatory final-response check:**", adapted)
         self.assertIn("shows `Conversation coverage:`", adapted)

@@ -42,7 +42,7 @@ The bundled trust model and schemas remain authoritative:
 
 For a routine Claude.ai ProofStamp, do **not** mechanically open every bundled reference or schema before starting. This `skill.md` contains the operating contract. Consult a specific reference only when a capability, privacy, format, or trust question is ambiguous. The bundled standard-library finalizer validates the completed artifact against the actual v1 schemas before creating a receipt.
 
-Claude.ai-specific completeness rule: for an ordinary `ai_generated` Claude.ai capture, set `capture.completeness.status` to `unknown` by default. Do not use `complete` merely because the visible chat appears whole. Use `complete` only when separate host/API/export evidence affirmatively establishes completeness for the declared scope and record that evidence in `capture.completeness.evidence_reference`. The finalizer rejects `ai_generated` + `complete` when that evidence reference is absent.
+Claude.ai-specific completeness rule: for an `ai_generated` Claude.ai capture, use `capture.completeness.status: unknown`. Do not use `complete` merely because the visible chat appears whole, and do not try to justify `complete` by inventing or self-asserting an evidence reference. If separate host/API/export/provider evidence genuinely establishes completeness, use the stronger capture method that corresponds to that evidence instead of `ai_generated`. The finalizer rejects every `ai_generated` + `complete` artifact.
 
 If this file conflicts with the trust model or schemas, use the stricter interpretation and disclose the conflict rather than inventing a workaround.
 """
