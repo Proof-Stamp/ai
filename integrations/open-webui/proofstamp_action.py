@@ -2,13 +2,14 @@
 title: ProofStamp
 author: ProofStamp.org
 author_url: https://proofstamp.org/
-version: 0.1.0
+version: 0.1.1
 license: Apache-2.0
 description: Create a local ProofStamp artifact and verified detached receipt from Open WebUI chat context.
 """
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import hashlib
 import html
@@ -26,7 +27,7 @@ from pydantic import BaseModel, Field
 
 
 VERIFY_URL = "https://email.proofstamp.org/verify"
-ACTION_VERSION = "0.1.0"
+ACTION_VERSION = "0.1.1"
 ARTIFACT_SUFFIX = ".proofstamp.json"
 RECEIPT_SUFFIX = ".proofstamp.receipt.json"
 REDACTION_MARKER = "[REDACTED BY USER CHOICE]"
@@ -81,11 +82,7 @@ def _excluded(reason: str) -> dict[str, str]:
 
 
 def _extract_text_content(content: Any) -> tuple[str, int]:
-    """Return textual message content and count of omitted non-text parts.
-
-    Open WebUI may use multimodal content arrays. Binary/media payloads are not
-    embedded in the ProofStamp v1 artifact.
-    """
+    """Return textual message content and count omitted non-text parts."""
     if isinstance(content, str):
         return content, 0
 
@@ -101,7 +98,7 @@ def _extract_text_content(content: Any) -> tuple[str, int]:
                 text_value = item.get("text")
                 if item_type in _TEXT_PART_TYPES and isinstance(text_value, str):
                     parts.append(text_value)
-                elif isinstance(text_value, str) and item_type is None:
+                elif item_type is None and isinstance(text_value, str):
                     parts.append(text_value)
                 else:
                     omitted += 1
@@ -132,6 +129,65 @@ def _redact_sensitive_material(text: str) -> tuple[str, int]:
         redacted, substitutions = pattern.subn(REDACTION_MARKER, redacted)
         count += substitutions
     return redacted, count
+
+
+def _selected_messages(body: dict[str, Any]) -> list[Any]:
+    """Return only messages through the message whose Action button was clicked."""
+    raw_messages = body.get("messages")
+    if not isinstance(raw_messages, list) or not raw_messages:
+        raise ValueError("Open WebUI did not supply any conversation messages to the Action")
+
+    selected_id = _safe_string(body.get("id"))
+    if not selected_id:
+        raise ValueError("Open WebUI did not supply the selected message id")
+
+    matches: list[int] = []
+    for index, raw in enumerate(raw_messages):
+        if isinstance(raw, dict) and _safe_string(raw.get("id")) == selected_id:
+            matches.append(index)
+
+    if not matches:
+        raise ValueError("Selected Open WebUI message id was not present in the supplied message list")
+    if len(matches) != 1:
+        raise ValueError("Selected Open WebUI message id was ambiguous in the supplied message list")
+
+    return raw_messages[: matches[0] + 1]
+
+
+def _ensure_input_within_limit(value: Any, limit_chars: int) -> int:
+    """Bound additional processing without serializing/copying the whole request."""
+    total = 0
+    stack = [value]
+    seen: set[int] = set()
+
+    while stack:
+        current = stack.pop()
+        if isinstance(current, str):
+            total += len(current)
+        elif isinstance(current, (bytes, bytearray)):
+            total += len(current)
+        elif isinstance(current, dict):
+            identity = id(current)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            stack.extend(current.keys())
+            stack.extend(current.values())
+        elif isinstance(current, (list, tuple, set)):
+            identity = id(current)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            stack.extend(current)
+        else:
+            total += 16
+
+        if total > limit_chars:
+            raise ValueError(
+                f"Open WebUI Action input exceeds the configured {limit_chars}-character processing limit"
+            )
+
+    return total
 
 
 def _model_value(body: dict[str, Any]) -> str | None:
@@ -165,9 +221,7 @@ def _build_session_artifact(
     redact_sensitive: bool = False,
     included_sensitive_unchanged: bool = False,
 ) -> tuple[dict[str, Any], dict[str, int]]:
-    raw_messages = body.get("messages")
-    if not isinstance(raw_messages, list) or not raw_messages:
-        raise ValueError("Open WebUI did not supply any conversation messages to the Action")
+    raw_messages = _selected_messages(body)
 
     messages: list[dict[str, Any]] = []
     redactions: list[dict[str, str]] = []
@@ -227,11 +281,17 @@ def _build_session_artifact(
     extra_metadata: list[dict[str, Any]] = []
     if host_session_id:
         extra_metadata.append(
-            {"name": "open_webui_session_id", "evidence": _evidence(host_session_id, "host_exposed")}
+            {
+                "name": "open_webui_session_id",
+                "evidence": _evidence(host_session_id, "host_exposed"),
+            }
         )
     if selected_message_id:
         extra_metadata.append(
-            {"name": "selected_message_id", "evidence": _evidence(selected_message_id, "host_exposed")}
+            {
+                "name": "selected_message_id",
+                "evidence": _evidence(selected_message_id, "host_exposed"),
+            }
         )
 
     omissions: list[dict[str, str]] = []
@@ -253,19 +313,19 @@ def _build_session_artifact(
     warnings: list[str] = []
     if included_sensitive_unchanged:
         warnings.append(
-            "Sensitive-looking credential or private-key content was included unchanged after user confirmation."
+            "Sensitive-looking credential or private-key content was included unchanged after explicit user confirmation."
         )
 
     if redactions:
         completeness = {
             "status": "partial",
-            "basis": "The user chose to redact sensitive-looking material before export, so the artifact is not a complete capture of the original visible text.",
+            "basis": "The user chose to redact sensitive-looking material before export, so the artifact is not a complete capture of the original visible text within the selected-message scope.",
             "provenance": "derived",
         }
     else:
         completeness = {
             "status": "unknown",
-            "basis": "Open WebUI supplied the conversation context to this Action, but the adapter received no affirmative signal that the supplied message list was the complete stored chat.",
+            "basis": "Open WebUI supplied conversation context through the selected message, but the adapter received no affirmative signal that this represented every stored item within that scope.",
             "provenance": "derived",
         }
 
@@ -285,8 +345,16 @@ def _build_session_artifact(
             "messages": messages,
         },
         "environment": {
-            "provider": _evidence(provider, "host_exposed") if provider else _unavailable("provider_not_explicitly_exposed_to_action"),
-            "model": _evidence(model, "host_exposed") if model else _unavailable("model_not_exposed_to_action"),
+            "provider": (
+                _evidence(provider, "host_exposed")
+                if provider
+                else _unavailable("provider_not_explicitly_exposed_to_action")
+            ),
+            "model": (
+                _evidence(model, "host_exposed")
+                if model
+                else _unavailable("model_not_exposed_to_action")
+            ),
             "client": _evidence("Open WebUI", "derived"),
             "harness": _evidence("Open WebUI Action Function", "derived"),
             "ui_settings": [],
@@ -300,7 +368,7 @@ def _build_session_artifact(
         "capture": {
             "generated_at": _evidence(generated_at, "derived"),
             "scope": [
-                "Textual Open WebUI conversation messages supplied to this Action, excluding system/developer instructions and binary/media payloads.",
+                "Textual Open WebUI conversation messages supplied to this Action, up to and including the message whose ProofStamp button was clicked, excluding system/developer instructions and binary/media payloads.",
                 "Open WebUI chat, message, and model identifiers explicitly supplied to this Action.",
             ],
             "completeness": completeness,
@@ -308,7 +376,8 @@ def _build_session_artifact(
             "redactions": redactions,
         },
         "limitations": [
-            "Conversation coverage is not independently confirmed unless a recorded redaction makes the exported text known to be partial.",
+            "Conversation coverage is not independently confirmed unless a recorded redaction makes the selected-message scope known to be partial.",
+            "Messages after the selected message are outside this capture scope even if the host supplied them to the Action.",
             "System/developer instructions and private reasoning are not exported.",
             "Attachments, file bytes, images, and source/citation objects are not exported by this Action version.",
             "Model and provider metadata are recorded only when Open WebUI explicitly supplies them; they are not provider-signed evidence.",
@@ -329,10 +398,13 @@ def _build_session_artifact(
     }
 
 
-def _verify_exact_saved_bytes(artifact_bytes: bytes) -> tuple[str, int]:
+def _verify_exact_saved_bytes(artifact_bytes: bytes) -> tuple[bytes, str, int]:
+    """Return the exact verified read-back bytes, digest, and byte size."""
     temp_name: str | None = None
     try:
-        with tempfile.NamedTemporaryFile("wb", delete=False, prefix="proofstamp-", suffix=".json") as handle:
+        with tempfile.NamedTemporaryFile(
+            "wb", delete=False, prefix="proofstamp-", suffix=".json"
+        ) as handle:
             handle.write(artifact_bytes)
             handle.flush()
             os.fsync(handle.fileno())
@@ -343,8 +415,6 @@ def _verify_exact_saved_bytes(artifact_bytes: bytes) -> tuple[str, int]:
         first_hash = hashlib.sha256(first_bytes).hexdigest()
         first_size = len(first_bytes)
 
-        # Parse the exact saved bytes between independent reads. This also
-        # ensures that the payload we are fingerprinting is valid UTF-8 JSON.
         parsed = json.loads(first_bytes.decode("utf-8"))
         if parsed.get("proofstamp", {}).get("format") != "proofstamp-session":
             raise ValueError("saved artifact does not have ProofStamp session format metadata")
@@ -355,10 +425,14 @@ def _verify_exact_saved_bytes(artifact_bytes: bytes) -> tuple[str, int]:
         second_hash = hashlib.sha256(second_bytes).hexdigest()
         second_size = len(second_bytes)
 
-        if first_hash != second_hash or first_size != second_size or first_bytes != second_bytes:
+        if (
+            first_hash != second_hash
+            or first_size != second_size
+            or first_bytes != second_bytes
+        ):
             raise RuntimeError("independent exact-byte verification failed")
 
-        return first_hash, first_size
+        return second_bytes, second_hash, second_size
     finally:
         if temp_name:
             try:
@@ -380,7 +454,7 @@ def _receipt(artifact_filename: str, sha256: str, size_bytes: int) -> dict[str, 
         "verification": {
             "verified": True,
             "recalculated_sha256": sha256,
-            "method": "Wrote the final artifact bytes to local temporary storage, read the saved bytes twice, parsed the saved JSON between reads, and compared both SHA-256 calculations before creating this receipt.",
+            "method": "Wrote the final artifact bytes to local temporary storage, read the saved bytes twice, parsed the saved JSON between reads, compared both SHA-256 calculations, and delivered the verified read-back bytes.",
         },
         "created_at": {"value": utc_now(), "provenance": "derived"},
         "limitations": [
@@ -420,7 +494,9 @@ def _mailto(artifact_filename: str, sha256: str, size_bytes: int, coverage: str)
     return f"mailto:?{query}"
 
 
-def _fallback_email_text(artifact_filename: str, sha256: str, size_bytes: int, coverage: str) -> str:
+def _fallback_email_text(
+    artifact_filename: str, sha256: str, size_bytes: int, coverage: str
+) -> str:
     return "\n".join(
         [
             "To: ",
@@ -513,6 +589,7 @@ def _render_result_html(
     <a class="btn" href="{mailto_href}">Email this ProofStamp</a>
   </div>
   <p class="small">Keep both files. The email link does not attach them automatically.</p>
+  <p class="small">This embedded result is stored with the Open WebUI chat and contains encoded copies of both download files.</p>
   <details>
     <summary>If the email button does not open</summary>
     <pre>{fallback_html}</pre>
@@ -532,10 +609,7 @@ if (window.ResizeObserver) new ResizeObserver(reportHeight).observe(document.bod
 
 
 def _sensitive_in_body(body: dict[str, Any]) -> bool:
-    raw_messages = body.get("messages")
-    if not isinstance(raw_messages, list):
-        return False
-    for raw in raw_messages:
+    for raw in _selected_messages(body):
         if not isinstance(raw, dict):
             continue
         role = _safe_string(raw.get("role")) or "unknown"
@@ -547,14 +621,37 @@ def _sensitive_in_body(body: dict[str, Any]) -> bool:
     return False
 
 
+def _interpret_sensitive_confirmation(result: Any) -> str:
+    """Return include/redact only for explicit boolean user responses."""
+    if result is True:
+        return "include"
+    if result is False:
+        return "redact"
+    raise ValueError(
+        "Sensitive-content confirmation did not complete with an explicit user choice"
+    )
+
+
 class Action:
     class Valves(BaseModel):
         priority: int = Field(default=0, description="Button order; lower appears earlier.")
+        max_input_chars: int = Field(
+            default=10_000_000,
+            ge=10_000,
+            le=50_000_000,
+            description="Maximum approximate Action input size processed by ProofStamp.",
+        )
         max_artifact_bytes: int = Field(
             default=5_000_000,
             ge=10_000,
             le=25_000_000,
             description="Maximum ProofStamp artifact size before the Action fails narrowly.",
+        )
+        confirmation_timeout_seconds: int = Field(
+            default=60,
+            ge=5,
+            le=600,
+            description="Maximum wait for explicit confirmation when sensitive-looking content is detected.",
         )
 
     def __init__(self):
@@ -583,27 +680,38 @@ class Action:
 
         try:
             await emit_status("Creating ProofStamp…")
+            _ensure_input_within_limit(body, self.valves.max_input_chars)
 
             redact_sensitive = False
             included_sensitive_unchanged = False
             if _sensitive_in_body(body):
                 if not __event_call__:
                     raise ValueError(
-                        "Sensitive-looking material was detected, but this host did not expose an interactive confirmation channel. Redact it manually before ProofStamp."
+                        "Sensitive-looking material was detected, but this host did not expose an interactive confirmation channel. No ProofStamp was created."
                     )
-                continue_unchanged = await __event_call__(
-                    {
-                        "type": "confirmation",
-                        "data": {
-                            "title": "Sensitive-looking content detected",
-                            "message": (
-                                "This conversation appears to contain a credential, token, or private key. "
-                                "Continue to include it unchanged? Choose Cancel to create a redacted ProofStamp instead."
-                            ),
-                        },
-                    }
-                )
-                if continue_unchanged:
+                try:
+                    response = await asyncio.wait_for(
+                        __event_call__(
+                            {
+                                "type": "confirmation",
+                                "data": {
+                                    "title": "Sensitive-looking content detected",
+                                    "message": (
+                                        "This conversation appears to contain a credential, token, or private key. "
+                                        "Continue to include it unchanged? Choose Cancel to create a redacted ProofStamp instead."
+                                    ),
+                                },
+                            }
+                        ),
+                        timeout=self.valves.confirmation_timeout_seconds,
+                    )
+                except asyncio.TimeoutError as exc:
+                    raise ValueError(
+                        "Sensitive-content confirmation timed out. No ProofStamp was created."
+                    ) from exc
+
+                choice = _interpret_sensitive_confirmation(response)
+                if choice == "include":
                     included_sensitive_unchanged = True
                 else:
                     redact_sensitive = True
@@ -621,7 +729,9 @@ class Action:
                 )
 
             artifact_filename = _safe_filename()
-            sha256, size_bytes = _verify_exact_saved_bytes(artifact_bytes)
+            verified_artifact_bytes, sha256, size_bytes = _verify_exact_saved_bytes(
+                artifact_bytes
+            )
 
             receipt = _receipt(artifact_filename, sha256, size_bytes)
             receipt_bytes = _json_bytes(receipt)
@@ -634,7 +744,7 @@ class Action:
 
             result_html = _render_result_html(
                 artifact_filename=artifact_filename,
-                artifact_bytes=artifact_bytes,
+                artifact_bytes=verified_artifact_bytes,
                 receipt_filename=receipt_filename,
                 receipt_bytes=receipt_bytes,
                 sha256=sha256,
