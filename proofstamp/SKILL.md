@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires access to the current conversation and the ability to create a downloadable file. Exact-byte verification additionally requires a local hashing capability; Python 3 can use the bundled scripts. Host-specific metadata and settings are captured only when legitimately exposed.
 metadata:
   author: ProofStamp.org
-  version: "0.1.5"
+  version: "0.1.6"
 ---
 
 # ProofStamp
@@ -140,11 +140,11 @@ Every artifact must include `capture.completeness`.
 
 Use exactly one status:
 
-- `complete` only when affirmative host/API/export/capture evidence supports that all items within the declared `capture.scope` were available and included;
+- `complete` only when the capture method is stronger than `ai_generated` and affirmative host/API/export/browser/provider evidence supports that all items within the declared `capture.scope` were available and included;
 - `partial` when you know one or more in-scope items are missing, truncated, failed to load, or were otherwise not included;
 - `unknown` when you cannot establish completeness.
 
-For `ai_generated` captures, `unknown` is the safe default unless the host exposes affirmative completeness evidence. Your own impression that the conversation appears complete is not sufficient.
+For `ai_generated` captures, do not use `complete`. Use `partial` when known items in scope are missing; otherwise use `unknown`, which is the safe default. Your own impression that the conversation appears complete is not sufficient, and a self-supplied `evidence_reference` does not upgrade the claim. If genuine host/API/export/browser/provider evidence establishes completeness, use the corresponding stronger capture method instead of `ai_generated`.
 
 Record a short `basis` explaining the assessment and `provenance: "derived"`. Use `evidence_reference` when a concrete host/API/export reference supports it.
 
@@ -306,6 +306,7 @@ Examples:
 
 - Conversation history is known to be incomplete: use `capture.completeness.status: "partial"` and disclose why.
 - Conversation completeness cannot be established: use `capture.completeness.status: "unknown"`.
+- `ai_generated` capture appears complete: keep `capture.completeness.status: "unknown"`; visual continuity is not enough to claim `complete`.
 - File creation unavailable: do not present pasted JSON as an exact-byte verified ProofStamp.
 - Saved-byte readback unavailable: do not create a verified receipt.
 - SHA-256 unavailable: create no verified receipt; explain that local integrity verification could not be completed.
