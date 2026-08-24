@@ -7,6 +7,7 @@ ProofStamp is designed to run across AI hosts with different capabilities. The s
 Platform-specific profiles supplement these generic rules. They record capabilities verified against current host documentation and must never override stricter trust-model or runtime capability checks.
 
 - [ChatGPT](platforms/chatgpt.md) — consumer ChatGPT capture, completeness, file persistence, exact-byte hashing, shared-link evidence, and provider-authentication limits. Last verified: 2026-08-24.
+- [Claude.ai](platforms/claude.md) — consumer Claude capture, custom Skills, code/file execution, shared-chat snapshot evidence, attachment/MCP limits, packaging differences, and provider-authentication limits. Last verified: 2026-08-24.
 
 ## Capability classes
 
