@@ -62,10 +62,11 @@ class ClaudePackageTests(unittest.TestCase):
     def test_adapter_changes_only_execution_mechanics_and_keeps_trust_boundaries(self):
         canonical_text = (REPO_ROOT / "proofstamp" / "SKILL.md").read_text(encoding="utf-8")
         adapted = self.builder.claude_skill_md(canonical_text)
+        adapted_lower = adapted.lower()
 
         self.assertIn("do **not** mechanically open every bundled reference or schema", adapted)
         self.assertIn("python scripts/finalize_proofstamp.py", adapted)
-        self.assertIn("schema using only Python's standard library", adapted)
+        self.assertIn("schema using only python's standard library", adapted_lower)
         self.assertIn("Do not separately run `create_receipt.py`", adapted)
         self.assertNotIn("Before capture, read and follow these bundled files:", adapted)
 
