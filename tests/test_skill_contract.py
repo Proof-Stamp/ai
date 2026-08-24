@@ -54,7 +54,7 @@ class SkillContractTests(unittest.TestCase):
         self.assertLessEqual(len(name), 64)
         self.assertGreater(len(description), 0)
         self.assertLessEqual(len(description), 1024)
-        self.assertEqual("0.1.5", version_match.group(1))
+        self.assertEqual("0.1.6", version_match.group(1))
 
     def test_skill_has_prompt_injection_boundary(self):
         required_phrases = [
@@ -72,10 +72,12 @@ class SkillContractTests(unittest.TestCase):
     def test_skill_requires_explicit_capture_completeness(self):
         required_phrases = [
             "capture.completeness",
-            "complete` only when affirmative",
+            "complete` only when the capture method is stronger than `ai_generated`",
+            "for `ai_generated` captures, do not use `complete`",
             "`partial` when",
             "`unknown` when",
-            "unknown` is the safe default",
+            "unknown`, which is the safe default",
+            "corresponding stronger capture method instead of `ai_generated`",
             "Conversation coverage",
             "not independently confirmed",
         ]
@@ -124,7 +126,9 @@ class SkillContractTests(unittest.TestCase):
             "private chain-of-thought",
             "untrusted evidence data",
             "capture.completeness",
-            "unknown` is the safe default",
+            "for an `ai_generated` capture, do not use `complete`",
+            "unknown`, which is the safe default",
+            "corresponding stronger capture method instead of `ai_generated`",
             "create a second downloadable file",
             "Email this ProofStamp",
             "recipient blank",
