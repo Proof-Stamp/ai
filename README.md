@@ -21,6 +21,8 @@ The intended command is simple:
 
 No ProofStamp account, API, database, blockchain, or automatic upload is required for the core workflow.
 
+Current skill metadata: `0.1.6`.
+
 ## Start here
 
 ### Install the Agent Skill
