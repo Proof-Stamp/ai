@@ -48,13 +48,10 @@ def validate_capture_semantics(artifact_path: Path) -> list[str]:
         proofstamp.get("capture_method") == "ai_generated"
         and completeness.get("status") == "complete"
     ):
-        evidence_reference = completeness.get("evidence_reference")
-        if not isinstance(evidence_reference, str) or not evidence_reference.strip():
-            errors.append(
-                "ai_generated capture cannot claim completeness 'complete' without an explicit "
-                "capture.completeness.evidence_reference to separate host/API/export evidence; "
-                "use 'unknown' when completeness cannot be established"
-            )
+        errors.append(
+            "ai_generated capture cannot claim completeness 'complete'; use 'unknown' unless a stronger "
+            "capture method backed by separate host/API/export/provider evidence is used"
+        )
 
     return errors
 
