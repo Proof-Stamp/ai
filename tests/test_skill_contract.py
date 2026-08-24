@@ -76,7 +76,8 @@ class SkillContractTests(unittest.TestCase):
             "`partial` when",
             "`unknown` when",
             "unknown` is the safe default",
-            "Capture completeness: complete | partial | unknown",
+            "Conversation coverage",
+            "not independently confirmed",
         ]
         for phrase in required_phrases:
             self.assertIn(phrase.lower(), self.text.lower())
@@ -98,7 +99,7 @@ class SkillContractTests(unittest.TestCase):
             "pre-filled email text",
             "recipient must be blank",
             "Hash verified locally: yes",
-            "Capture completeness: complete | partial | unknown",
+            "Conversation coverage",
             "https://email.proofstamp.org/verify",
             "Never claim files were automatically attached",
             "Never send email automatically",
@@ -127,6 +128,8 @@ class SkillContractTests(unittest.TestCase):
             "create a second downloadable file",
             "Email this ProofStamp",
             "recipient blank",
+            "Conversation coverage",
+            "not independently confirmed",
             "do not pretend the ProofStamp is verified",
             "original creation time",
         ]
