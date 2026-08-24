@@ -1,104 +1,96 @@
-# Release preparation
+# Release process
 
-Target: **`v0.1.3` pre-release**
+ProofStamp AI uses tagged GitHub releases as immutable public release boundaries. Do not create a tag until the exact target commit has passed the required tests and release smoke checks.
 
-This is a small post-release hardening release. It makes the user-controlled email handoff part of every successful exact-byte-verified ProofStamp delivery and prepares the public repository for skill-directory discovery.
+This file is intentionally version-neutral so it does not become stale after every release.
 
-## Release blockers
+## Before the release PR
 
-Do not tag or publish the release until all unchecked items below are complete.
+Choose the next version and confirm the intended scope.
 
-- [x] Skill metadata is `0.1.3` on `main`.
-- [x] PR #7 is merged: required email handoff after successful exact-byte verification.
-- [x] PR #8 is merged: directory-ready README and one-command `skills` CLI install instructions.
-- [x] GitHub Actions `tests` passed on the PR #8 head.
-- [ ] GitHub Actions `tests` passes on the final `main` commit selected for the tag.
-- [ ] Run one fresh-host delivery smoke test and confirm a successful verified delivery includes either the clickable `Email this ProofStamp` link or the pre-filled email text fallback.
-- [ ] Create tag `v0.1.3` from the exact tested `main` commit.
-- [ ] Publish the GitHub pre-release.
-- [ ] Run a post-release install smoke test from the public repository/tag with the `skills` CLI.
-- [ ] After the tag exists, pin the short prompt in `PROMPT.md` from `v0.1.2` to `v0.1.3` in a separate post-release housekeeping PR.
+For a release that changes the canonical Agent Skill, update every version-bearing public entry point that is expected to stay in sync, including:
 
-## Proposed tag
+- `proofstamp/SKILL.md` metadata;
+- the immutable workflow reference in `PROMPT.md`;
+- README version text and badges where applicable;
+- release/package documentation affected by the change.
+
+Do not mix unrelated feature work into a release-only version bump.
+
+## Required checks
+
+Before tagging:
+
+- [ ] Run the deterministic unit and security test suite locally when the change can be tested locally.
+- [ ] Open a focused pull request.
+- [ ] Confirm the GitHub Actions `tests` workflow passes on the PR head.
+- [ ] Perform any model- or host-dependent smoke tests required by the changed surface.
+- [ ] Merge the release PR.
+- [ ] Confirm the GitHub Actions `tests` workflow passes on the exact final `main` commit that will be tagged.
+- [ ] Confirm the version-bearing public files agree with one another.
+
+For changes to capture, hashing, receipts, conversation coverage, privacy, email handoff, or host adapters, add focused regression coverage before release rather than relying only on manual testing.
+
+## Tag and publish
+
+1. Create the release tag from the exact tested `main` commit.
+2. Publish a GitHub release for that tag.
+3. Summarize user-visible changes and important trust/security changes in the release notes.
+4. Include a changelog link from the previous release when one exists.
+5. Do not describe experimental integrations as supported unless their documented support gate has actually been met.
+
+Tags should use the existing version format:
 
 ```text
-v0.1.3
+v<major>.<minor>.<patch>
 ```
 
-The Agent Skill metadata in `proofstamp/SKILL.md` is `0.1.3` and must remain so at the tagged commit.
+ProofStamp is currently pre-1.0, so compatibility should not be assumed across releases unless the relevant contract says otherwise.
 
-## Proposed release title
+## Claude package
 
-```text
-ProofStamp AI v0.1.3 — required email handoff
-```
+Publishing a GitHub release triggers `.github/workflows/package-claude.yml`.
 
-## Proposed release notes
+That workflow:
 
-ProofStamp AI v0.1.3 is a focused delivery-contract hardening release.
+1. checks out the canonical `proofstamp/` source from the release tag;
+2. builds the Claude-compatible ZIP;
+3. validates the ZIP layout;
+4. uploads the ZIP as a workflow artifact; and
+5. attaches `proofstamp.zip` to the GitHub release.
 
-### What changed
+For a manual package run, provide the release tag explicitly. The workflow should not rely on a hard-coded default release tag.
 
-After a ProofStamp artifact is successfully exact-byte verified, the delivery must now include all of the following:
+## Post-release verification
 
-- downloadable `.proofstamp.json` artifact;
-- downloadable detached `.proofstamp.receipt.json` receipt;
-- artifact filename;
-- SHA-256;
-- byte size;
-- hash verification status;
-- capture completeness: `complete`, `partial`, or `unknown`;
-- user-controlled email handoff.
+After publication:
 
-The preferred handoff is a clickable **Email this ProofStamp** `mailto:` link. If the host cannot render a clickable mailto link, it must provide the pre-filled email text instead. A successful verified delivery must never silently omit both.
+- [ ] Confirm the release points to the intended tested commit.
+- [ ] Confirm `proofstamp.zip` is attached when the Claude package is expected.
+- [ ] Run a clean install or fresh-host smoke test from the published tag.
+- [ ] Verify the README install path and prompt-only path still resolve.
+- [ ] Verify any release-specific external links used in the workflow.
+- [ ] Open a small housekeeping PR only if a public pointer could not be updated before the tag was created.
 
-The email handoff contains the artifact filename, SHA-256, byte size, `Hash verified locally: yes`, capture completeness, `https://email.proofstamp.org/verify`, and concise limitation language. The recipient remains blank.
+## Release notes
 
-`proofstamp/scripts/create_mailto.py` now supports `--text` to generate the fallback email text and rejects handoff creation if the artifact does not contain a valid capture-completeness status.
+Release notes should distinguish clearly between:
 
-### Safety boundaries retained
+- product or workflow changes;
+- security or trust-model changes;
+- documentation-only changes;
+- experimental integrations;
+- compatibility or migration notes.
 
-- ProofStamp never claims that files were attached automatically.
-- ProofStamp never sends email automatically.
-- The SHA-256 claim is about exact-byte integrity, not truth, authenticity, authorship, provider certification, or original creation time.
-- Capture completeness remains an independent evidence dimension and is not upgraded by the email handoff.
+Do not imply that SHA-256 proves truth, authorship, provider authenticity, session completeness, or original creation time. Do not claim provider signing or stronger capture coverage without the evidence required by the trust model.
 
-### Compatibility
+## Abort conditions
 
-There is no schema redesign and no receipt-format, hashing-algorithm, provenance-vocabulary, or completeness-semantics change.
+Do not tag or publish if:
 
-The existing command remains compatible:
-
-```bash
-python proofstamp/scripts/create_mailto.py <artifact> <receipt>
-```
-
-It still returns a `mailto:` URI. The new `--text` option is additive.
-
-The intentional behavior change is contractual: after successful exact-byte verification, the host must provide either the mailto link or fallback email text.
-
-### Directory discovery
-
-The README now includes the public install command:
-
-```bash
-npx skills add https://github.com/Proof-Stamp/ai --skill proofstamp
-```
-
-Current skills.sh documentation states that leaderboard/directory discovery is driven automatically by observed `skills` CLI installs rather than by a separate submission pull request.
-
-## Tagging procedure
-
-1. Confirm the final `main` GitHub Actions `tests` run is green.
-2. Run one fresh-host delivery smoke test for the required email handoff.
-3. Create tag `v0.1.3` from that exact `main` commit.
-4. Publish a GitHub **pre-release** using the release notes above.
-5. Run the public `skills` CLI install smoke test.
-6. Open the small post-release housekeeping PR that pins `PROMPT.md` to the immutable `v0.1.3` tag.
-
-## Directory submission after release
-
-- **skills.sh:** no separate submission PR is required. Run/install the public repository through the `skills` CLI so it can enter install-driven discovery.
-- **Agent Skill Exchange:** submit a catalog PR under `skills/proofstamp/SKILL.md`, category `Security & Verification`, framework `Multi-Framework`, verification `listed`, source `https://github.com/Proof-Stamp/ai`.
-
-The Agent Skill Exchange submission is a catalog wrapper. The canonical runtime skill remains `proofstamp/SKILL.md` in this repository.
+- required CI is failing or has not run on the target commit;
+- version-bearing files disagree;
+- exact-byte verification or receipt tests fail;
+- a known security regression is unresolved;
+- a required host smoke test fails;
+- the release notes overstate provenance, completeness, authenticity, or support status.
