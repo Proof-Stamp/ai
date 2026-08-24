@@ -2,6 +2,12 @@
 
 ProofStamp is designed to run across AI hosts with different capabilities. The skill must adapt to what the current environment actually exposes and must not invent stronger evidence when a capability is missing.
 
+## Verified platform profiles
+
+Platform-specific profiles supplement these generic rules. They record capabilities verified against current host documentation and must never override stricter trust-model or runtime capability checks.
+
+- [ChatGPT](platforms/chatgpt.md) — consumer ChatGPT capture, completeness, file persistence, exact-byte hashing, shared-link evidence, and provider-authentication limits. Last verified: 2026-08-24.
+
 ## Capability classes
 
 ### A. Full local artifact + hash capability
