@@ -14,6 +14,12 @@ RECEIPT = ROOT / "examples" / "synthetic-session" / "example-session.proofstamp.
 MAILTO_SCRIPT = ROOT / "proofstamp" / "scripts" / "create_mailto.py"
 RECEIPT_SCRIPT = ROOT / "proofstamp" / "scripts" / "create_receipt.py"
 
+COVERAGE_LABELS = {
+    "complete": "confirmed for recorded scope",
+    "partial": "partial",
+    "unknown": "not independently confirmed",
+}
+
 
 class MailtoHandoffTests(unittest.TestCase):
     def run_mailto(self, artifact: Path, receipt: Path, *extra_args: str):
@@ -66,7 +72,7 @@ class MailtoHandoffTests(unittest.TestCase):
         self.assertIn(f"SHA-256: {expected_hash}", body)
         self.assertIn(f"Size: {expected_size} bytes", body)
         self.assertIn("Hash verified locally: yes", body)
-        self.assertIn("Capture completeness: complete", body)
+        self.assertIn("Conversation coverage: confirmed for recorded scope", body)
         self.assertIn("https://email.proofstamp.org/verify", body)
         self.assertIn("does not prove truth, authenticity", body)
 
@@ -84,13 +90,13 @@ class MailtoHandoffTests(unittest.TestCase):
         self.assertIn("SHA-256:", text)
         self.assertIn("Size:", text)
         self.assertIn("Hash verified locally: yes", text)
-        self.assertIn("Capture completeness: complete", text)
+        self.assertIn("Conversation coverage: confirmed for recorded scope", text)
         self.assertIn("https://email.proofstamp.org/verify", text)
         self.assertIn("does not prove truth, authenticity", text)
 
-    def test_mailto_includes_each_allowed_capture_completeness_status(self):
+    def test_mailto_translates_each_capture_completeness_status_for_people(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            for status in ("complete", "partial", "unknown"):
+            for status, label in COVERAGE_LABELS.items():
                 with self.subTest(status=status):
                     artifact_copy = Path(temp_dir) / f"{status}.proofstamp.json"
                     data = json.loads(ARTIFACT.read_text(encoding="utf-8"))
@@ -107,7 +113,8 @@ class MailtoHandoffTests(unittest.TestCase):
                         urlparse(result.stdout.strip()).query,
                         strict_parsing=True,
                     )["body"][0]
-                    self.assertIn(f"Capture completeness: {status}", body)
+                    self.assertIn(f"Conversation coverage: {label}", body)
+                    self.assertNotIn("Capture completeness:", body)
 
     def test_invalid_capture_completeness_refuses_handoff(self):
         with tempfile.TemporaryDirectory() as temp_dir:

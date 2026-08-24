@@ -8,7 +8,7 @@ import json
 import sys
 from pathlib import Path
 
-from create_mailto import build_email_text, build_mailto
+from create_mailto import CONVERSATION_COVERAGE, build_email_text, build_mailto
 from create_receipt import build_receipt, default_receipt_path, write_json_atomic
 from validate_proofstamp import RECEIPT_SCHEMA, SESSION_SCHEMA, validate_file
 from verify_proofstamp import verify
@@ -24,6 +24,10 @@ def load_artifact(artifact_path: Path) -> dict:
 def completeness_status(artifact_path: Path) -> str:
     value = load_artifact(artifact_path)
     return value["capture"]["completeness"]["status"]
+
+
+def conversation_coverage(artifact_path: Path) -> str:
+    return CONVERSATION_COVERAGE[completeness_status(artifact_path)]
 
 
 def validate_capture_semantics(artifact_path: Path) -> list[str]:
@@ -83,6 +87,8 @@ def finalize(artifact: Path, *, force: bool = False) -> dict:
 
     mailto = build_mailto(artifact, receipt_path)
     email_text = build_email_text(artifact, receipt_path)
+    completeness = completeness_status(artifact)
+    coverage = CONVERSATION_COVERAGE[completeness]
 
     return {
         "artifact": artifact.name,
@@ -92,13 +98,15 @@ def finalize(artifact: Path, *, force: bool = False) -> dict:
         "schema_validation": "passed",
         "capture_trust_validation": "passed",
         "hash_verified": True,
-        "capture_completeness": completeness_status(artifact),
+        "capture_completeness": completeness,
+        "conversation_coverage": coverage,
         "email_handoff_required": True,
         "mailto": mailto,
         "email_text": email_text,
         "delivery_instruction": (
-            "Final response must include Email this ProofStamp using the returned mailto URI; "
-            "if mailto cannot be rendered, include the returned email_text fallback."
+            "Final response should show Conversation coverage using the returned conversation_coverage value, "
+            "not the raw capture_completeness status. It must also include Email this ProofStamp using the "
+            "returned mailto URI; if mailto cannot be rendered, include the returned email_text fallback."
         ),
     }
 

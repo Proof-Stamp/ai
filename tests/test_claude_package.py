@@ -76,6 +76,9 @@ class ClaudePackageTests(unittest.TestCase):
         self.assertIn("finalizer rejects `ai_generated` + `complete`", adapted)
 
         self.assertIn("**Mandatory final-response check:**", adapted)
+        self.assertIn("shows `Conversation coverage:`", adapted)
+        self.assertIn("exact returned `conversation_coverage` value", adapted)
+        self.assertIn("not the raw `capture_completeness` status", adapted)
         self.assertIn("a clickable link labeled `Email this ProofStamp`", adapted)
         self.assertIn("the exact returned `email_text` fallback", adapted)
         self.assertIn("does **not** satisfy the required email handoff", adapted)
@@ -88,6 +91,8 @@ class ClaudePackageTests(unittest.TestCase):
             "provider_signed",
             "capture.completeness",
             "unknown` is the safe default",
+            "Conversation coverage",
+            "not independently confirmed",
             "Never claim `verified: true`",
             "successful verified ProofStamp delivery is not complete",
             "Never send email automatically",

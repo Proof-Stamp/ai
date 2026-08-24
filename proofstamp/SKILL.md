@@ -235,10 +235,18 @@ When verification succeeds, a successful verified ProofStamp delivery is not com
 - SHA-256;
 - byte size;
 - hash verification status (`Hash verified: yes`);
-- `Capture completeness: complete | partial | unknown`;
+- `Conversation coverage: confirmed for recorded scope | partial | not independently confirmed`;
 - the `Email this ProofStamp` mailto link, or the pre-filled email text fallback described below.
 
 Also include a concise list of material captured and important unavailable/excluded/partial-capture limitations.
+
+Keep the machine-readable `capture.completeness.status` inside the artifact. In the normal human-facing response, translate it as follows:
+
+- `complete` → `Conversation coverage: confirmed for recorded scope`;
+- `partial` → `Conversation coverage: partial`;
+- `unknown` → `Conversation coverage: not independently confirmed`.
+
+Do not show the raw label `Capture completeness` in the normal user-facing result unless the user asks for technical details.
 
 The email handoff is required after successful exact-byte verification. Never silently omit both the mailto link and the fallback email text.
 
@@ -264,7 +272,7 @@ The mailto recipient must be blank so the user chooses where to send it. The sub
 - SHA-256;
 - byte size;
 - `Hash verified locally: yes`;
-- `Capture completeness: complete | partial | unknown`;
+- the same human-facing `Conversation coverage` wording used in the final response;
 - `https://email.proofstamp.org/verify`;
 - a concise claims limitation.
 
@@ -317,7 +325,7 @@ A normal successful response should be short and operational:
 > SHA-256: `...`  
 > Bytes: `...`  
 > Hash verified: yes  
-> Capture completeness: unknown
+> Conversation coverage: not independently confirmed
 >
 > Captured: visible conversation, consulted-source metadata, accessible environment metadata.  
 > Not captured: protected system instructions and private reasoning. Any other limitations are recorded inside the artifact.
