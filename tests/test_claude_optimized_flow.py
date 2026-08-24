@@ -38,10 +38,15 @@ class ClaudeOptimizedFlowTests(unittest.TestCase):
             self.assertEqual("passed", output["capture_trust_validation"])
             self.assertIs(True, output["hash_verified"])
             self.assertIn(output["capture_completeness"], {"complete", "partial", "unknown"})
+            self.assertIn(
+                output["conversation_coverage"],
+                {"confirmed for recorded scope", "partial", "not independently confirmed"},
+            )
             self.assertIs(True, output["email_handoff_required"])
             self.assertTrue(output["mailto"].startswith("mailto:?subject="))
             self.assertTrue(output["email_text"].startswith("To:\nSubject: ProofStamp:"))
-            self.assertIn("Final response must include Email this ProofStamp", output["delivery_instruction"])
+            self.assertIn("Conversation coverage", output["delivery_instruction"])
+            self.assertIn("Email this ProofStamp", output["delivery_instruction"])
             receipt = artifact.with_name("synthetic-proofstamp-test-2026-08-24.proofstamp.receipt.json")
             self.assertTrue(receipt.is_file())
 
