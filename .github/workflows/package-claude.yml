@@ -6,7 +6,7 @@ on:
       tag:
         description: Release tag to attach the Claude skill package to
         required: true
-        default: v0.1.3
+        default: v0.1.6
   release:
     types: [published]
 
