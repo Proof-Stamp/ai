@@ -65,7 +65,9 @@ HASHING_CLAUDE = """Preferred Claude.ai method when Python 3 is available:
 python scripts/finalize_proofstamp.py path/to/session.proofstamp.json
 ```
 
-Run this **once after the final artifact has been written**. It validates the session against the bundled v1 JSON Schema using only Python's standard library, enforces capture trust rules that JSON Schema alone cannot express, reads and hashes the exact saved artifact bytes twice before creating the receipt, validates the receipt schema, independently verifies the saved artifact against the receipt, and returns the verified SHA-256, byte size, completeness status, `mailto:` URI, fallback email text, and a mandatory delivery instruction.
+Run this **once after the final artifact has been written**. It validates the session against the bundled v1 JSON Schema using only Python's standard library, enforces capture trust rules that JSON Schema alone cannot express, reads and hashes the exact saved artifact bytes twice before creating the receipt, validates the receipt schema, independently verifies the saved artifact against the receipt, and returns the verified SHA-256, byte size, raw machine completeness status, human-facing `conversation_coverage`, `mailto:` URI, fallback email text, and a mandatory delivery instruction.
+
+In the normal final response, show the returned `conversation_coverage` value as `Conversation coverage:`. Do not surface the raw `capture_completeness` value as `Capture completeness` unless the user asks for technical details.
 
 Do not separately run `create_receipt.py`, `verify_proofstamp.py`, or `create_mailto.py` after a successful finalizer run. Those lower-level scripts remain available for debugging or hosts that cannot use the finalizer.
 """
@@ -83,10 +85,10 @@ Render the resulting URI as a clickable link labeled:
 
 EMAIL_CLAUDE = """When the bundled finalizer succeeds, use the exact `mailto` value it returned. Do not run another command merely to recreate the same handoff.
 
-**Mandatory final-response check:** before ending a successful verified ProofStamp response, confirm that the response itself contains one of these two forms:
+**Mandatory final-response check:** before ending a successful verified ProofStamp response, confirm that the response itself:
 
-1. a clickable link labeled `Email this ProofStamp` whose target is the exact returned `mailto` URI; or
-2. if Claude cannot render that link, the exact returned `email_text` fallback with a blank recipient.
+1. shows `Conversation coverage:` using the exact returned `conversation_coverage` value, not the raw `capture_completeness` status; and
+2. contains either a clickable link labeled `Email this ProofStamp` whose target is the exact returned `mailto` URI, or, if Claude cannot render that link, the exact returned `email_text` fallback with a blank recipient.
 
 A verify URL, a link to `https://email.proofstamp.org/`, or telling the user they can prepare an email later does **not** satisfy the required email handoff. Never omit both handoff forms after successful verification.
 
