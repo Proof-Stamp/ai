@@ -19,10 +19,26 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Check out repository
+      - name: Check out repository with tag history
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.tag }}
+          fetch-depth: 0
+
+      - name: Set package tag
+        id: package_tag
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Use canonical ProofStamp source from release tag
+        shell: bash
+        run: |
+          git rev-parse --verify "refs/tags/${{ steps.package_tag.outputs.tag }}"
+          git checkout "${{ steps.package_tag.outputs.tag }}" -- proofstamp
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -48,12 +64,12 @@ jobs:
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: proofstamp-claude-skill
+          name: proofstamp-claude-skill-${{ steps.package_tag.outputs.tag }}
           path: dist/claude/proofstamp.zip
           if-no-files-found: error
 
       - name: Attach package to release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.tag }}
+          TAG: ${{ steps.package_tag.outputs.tag }}
         run: gh release upload "$TAG" dist/claude/proofstamp.zip --clobber
