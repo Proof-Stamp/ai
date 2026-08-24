@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import importlib.util
 import json
+import re
 import sys
 import types
 import unittest
@@ -105,6 +107,35 @@ class OpenWebUIActionTests(unittest.TestCase):
             artifact["environment"]["private_reasoning"]["status"], "excluded"
         )
 
+    def test_selected_message_boundary_excludes_later_messages(self):
+        body = sample_body()
+        body["messages"].extend(
+            [
+                {"id": "m-3", "role": "user", "content": "Later user message"},
+                {"id": "m-4", "role": "assistant", "content": "Later answer"},
+            ]
+        )
+        body["id"] = "m-2"
+        artifact, _ = ps._build_session_artifact(body)
+        ids = [m.get("message_id") for m in artifact["session"]["messages"]]
+        self.assertEqual(ids, ["m-1", "m-2"])
+        exported = json.dumps(artifact)
+        self.assertNotIn("Later user message", exported)
+        self.assertNotIn("Later answer", exported)
+
+    def test_selected_message_id_must_exist_and_be_unambiguous(self):
+        body = sample_body()
+        body["id"] = "missing"
+        with self.assertRaises(ValueError):
+            ps._selected_messages(body)
+
+        body = sample_body()
+        body["messages"].append(
+            {"id": "m-2", "role": "assistant", "content": "duplicate"}
+        )
+        with self.assertRaises(ValueError):
+            ps._selected_messages(body)
+
     def test_prompt_injection_stays_evidence_data(self):
         body = sample_body()
         body["messages"][1]["content"] = (
@@ -114,9 +145,7 @@ class OpenWebUIActionTests(unittest.TestCase):
         artifact, _ = ps._build_session_artifact(body)
         self.assertEqual(artifact["proofstamp"]["capture_method"], "api_capture")
         self.assertEqual(artifact["capture"]["completeness"]["status"], "unknown")
-        self.assertIn(
-            "provider_signed", artifact["session"]["messages"][0]["content"]
-        )
+        self.assertIn("provider_signed", artifact["session"]["messages"][0]["content"])
 
     def test_multimodal_binary_payload_is_not_embedded(self):
         body = sample_body()
@@ -156,18 +185,79 @@ class OpenWebUIActionTests(unittest.TestCase):
             "user_requested_secret_redaction",
         )
 
-    def test_exact_saved_bytes_drive_receipt(self):
+    def test_sensitive_confirmation_requires_explicit_boolean(self):
+        self.assertEqual(ps._interpret_sensitive_confirmation(True), "include")
+        self.assertEqual(ps._interpret_sensitive_confirmation(False), "redact")
+        for invalid in (
+            {"error": "Client session disconnected."},
+            {"confirmed": True},
+            1,
+            "yes",
+            None,
+        ):
+            with self.assertRaises(ValueError):
+                ps._interpret_sensitive_confirmation(invalid)
+
+    def test_sensitive_scan_respects_selected_message_boundary(self):
+        body = sample_body()
+        body["messages"].append(
+            {
+                "id": "m-3",
+                "role": "user",
+                "content": "sk-" + ("A" * 30),
+            }
+        )
+        body["id"] = "m-2"
+        self.assertFalse(ps._sensitive_in_body(body))
+
+    def test_input_processing_limit_fails_before_serializing(self):
+        body = sample_body()
+        body["messages"][1]["content"] = "x" * 100
+        with self.assertRaises(ValueError):
+            ps._ensure_input_within_limit(body, 50)
+
+    def test_exact_saved_bytes_are_returned_for_delivery(self):
         artifact, _ = ps._build_session_artifact(sample_body())
         artifact_bytes = ps._json_bytes(artifact)
-        digest, size = ps._verify_exact_saved_bytes(artifact_bytes)
-        self.assertEqual(digest, hashlib.sha256(artifact_bytes).hexdigest())
-        self.assertEqual(size, len(artifact_bytes))
-        filename = "open-webui-session-2026-08-24-120000.proofstamp.json"
+        verified_bytes, digest, size = ps._verify_exact_saved_bytes(artifact_bytes)
+        self.assertEqual(verified_bytes, artifact_bytes)
+        self.assertEqual(digest, hashlib.sha256(verified_bytes).hexdigest())
+        self.assertEqual(size, len(verified_bytes))
+
+    def test_rendered_download_bytes_match_receipt_fingerprint(self):
+        artifact, _ = ps._build_session_artifact(sample_body())
+        artifact_bytes = ps._json_bytes(artifact)
+        verified_bytes, digest, size = ps._verify_exact_saved_bytes(artifact_bytes)
+        filename = ps._safe_filename(
+            datetime(2026, 8, 24, 12, 0, tzinfo=timezone.utc)
+        )
         receipt = ps._receipt(filename, digest, size)
-        self.assertTrue(receipt["verification"]["verified"])
-        self.assertEqual(receipt["fingerprint"]["sha256"], digest)
-        self.assertEqual(receipt["verification"]["recalculated_sha256"], digest)
-        self.assertEqual(receipt["artifact"]["size_bytes"], size)
+        receipt_bytes = ps._json_bytes(receipt)
+        receipt_filename = ps._receipt_filename(filename)
+        coverage = ps._coverage_label(artifact)
+        rendered = ps._render_result_html(
+            artifact_filename=filename,
+            artifact_bytes=verified_bytes,
+            receipt_filename=receipt_filename,
+            receipt_bytes=receipt_bytes,
+            sha256=digest,
+            size_bytes=size,
+            coverage=coverage,
+            mailto=ps._mailto(filename, digest, size, coverage),
+            fallback_email=ps._fallback_email_text(filename, digest, size, coverage),
+        )
+        payloads = re.findall(
+            r'href="data:application/json;base64,([A-Za-z0-9+/=]+)"', rendered
+        )
+        self.assertGreaterEqual(len(payloads), 2)
+        downloaded_artifact = base64.b64decode(payloads[0])
+        downloaded_receipt = json.loads(
+            base64.b64decode(payloads[1]).decode("utf-8")
+        )
+        self.assertEqual(downloaded_artifact, verified_bytes)
+        self.assertEqual(hashlib.sha256(downloaded_artifact).hexdigest(), digest)
+        self.assertEqual(downloaded_receipt["fingerprint"]["sha256"], digest)
+        self.assertIn("stored with the Open WebUI chat", rendered)
 
     def test_mailto_has_blank_recipient_and_verified_values(self):
         filename = "open-webui-session-2026-08-24-120000.proofstamp.json"
@@ -182,40 +272,8 @@ class OpenWebUIActionTests(unittest.TestCase):
         self.assertIn(f"SHA-256: {digest}", body)
         self.assertIn("Byte size: 1234", body)
         self.assertIn("Hash verified locally: yes", body)
-        self.assertIn(
-            "Conversation coverage: not independently confirmed", body
-        )
+        self.assertIn("Conversation coverage: not independently confirmed", body)
         self.assertIn(ps.VERIFY_URL, body)
-
-    def test_rendered_result_contains_both_downloads_and_email_fallback(self):
-        artifact, _ = ps._build_session_artifact(sample_body())
-        artifact_bytes = ps._json_bytes(artifact)
-        digest, size = ps._verify_exact_saved_bytes(artifact_bytes)
-        filename = ps._safe_filename(
-            datetime(2026, 8, 24, 12, 0, tzinfo=timezone.utc)
-        )
-        receipt = ps._receipt(filename, digest, size)
-        receipt_bytes = ps._json_bytes(receipt)
-        receipt_filename = ps._receipt_filename(filename)
-        coverage = ps._coverage_label(artifact)
-        mailto = ps._mailto(filename, digest, size, coverage)
-        fallback = ps._fallback_email_text(filename, digest, size, coverage)
-        rendered = ps._render_result_html(
-            artifact_filename=filename,
-            artifact_bytes=artifact_bytes,
-            receipt_filename=receipt_filename,
-            receipt_bytes=receipt_bytes,
-            sha256=digest,
-            size_bytes=size,
-            coverage=coverage,
-            mailto=mailto,
-            fallback_email=fallback,
-        )
-        self.assertIn("Download ProofStamp", rendered)
-        self.assertIn("Download detached receipt", rendered)
-        self.assertIn("Email this ProofStamp", rendered)
-        self.assertGreaterEqual(rendered.count("data:application/json;base64,"), 2)
-        self.assertIn("If the email button does not open", rendered)
 
     def test_generic_filename_is_privacy_safe(self):
         filename = ps._safe_filename(
@@ -233,18 +291,24 @@ class OpenWebUIActionTests(unittest.TestCase):
         from jsonschema import Draft202012Validator, FormatChecker
 
         session_schema = json.loads(
-            (ROOT / "proofstamp" / "schemas" / "proofstamp-session-v1.schema.json").read_text(
-                encoding="utf-8"
-            )
+            (
+                ROOT
+                / "proofstamp"
+                / "schemas"
+                / "proofstamp-session-v1.schema.json"
+            ).read_text(encoding="utf-8")
         )
         receipt_schema = json.loads(
-            (ROOT / "proofstamp" / "schemas" / "proofstamp-receipt-v1.schema.json").read_text(
-                encoding="utf-8"
-            )
+            (
+                ROOT
+                / "proofstamp"
+                / "schemas"
+                / "proofstamp-receipt-v1.schema.json"
+            ).read_text(encoding="utf-8")
         )
         artifact, _ = ps._build_session_artifact(sample_body())
         artifact_bytes = ps._json_bytes(artifact)
-        digest, size = ps._verify_exact_saved_bytes(artifact_bytes)
+        _, digest, size = ps._verify_exact_saved_bytes(artifact_bytes)
         filename = "open-webui-session-2026-08-24-120000.proofstamp.json"
         receipt = ps._receipt(filename, digest, size)
         Draft202012Validator(
@@ -266,6 +330,61 @@ class OpenWebUIActionTests(unittest.TestCase):
             "os.getenv",
         ):
             self.assertNotIn(forbidden, source)
+
+
+class OpenWebUIActionAsyncTests(unittest.IsolatedAsyncioTestCase):
+    async def test_disconnect_like_confirmation_response_fails_closed(self):
+        body = sample_body()
+        body["messages"][1]["content"] = "sk-" + ("A" * 30)
+        events = []
+
+        async def event_call(_event):
+            return {"error": "Client session disconnected."}
+
+        async def emitter(event):
+            events.append(event)
+
+        action = ps.Action()
+        result = await action.action(
+            body,
+            __event_call__=event_call,
+            __event_emitter__=emitter,
+        )
+        self.assertIsNone(result)
+        self.assertTrue(
+            any(
+                event.get("type") == "notification"
+                and event.get("data", {}).get("type") == "error"
+                for event in events
+            )
+        )
+        self.assertFalse(
+            any(
+                event.get("data", {}).get("description", "").startswith(
+                    "ProofStamp created"
+                )
+                for event in events
+            )
+        )
+
+    async def test_explicit_false_confirmation_creates_redacted_proofstamp(self):
+        body = sample_body()
+        fake_secret = "sk-" + ("A" * 30)
+        body["messages"][1]["content"] = fake_secret
+
+        async def event_call(_event):
+            return False
+
+        action = ps.Action()
+        result = await action.action(body, __event_call__=event_call)
+        self.assertIsNotNone(result)
+        rendered = result.body.decode("utf-8")
+        payloads = re.findall(
+            r'href="data:application/json;base64,([A-Za-z0-9+/=]+)"', rendered
+        )
+        artifact = json.loads(base64.b64decode(payloads[0]).decode("utf-8"))
+        self.assertEqual(artifact["capture"]["completeness"]["status"], "partial")
+        self.assertNotIn(fake_secret, json.dumps(artifact))
 
 
 if __name__ == "__main__":
