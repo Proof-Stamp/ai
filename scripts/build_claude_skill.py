@@ -42,6 +42,8 @@ The bundled trust model and schemas remain authoritative:
 
 For a routine Claude.ai ProofStamp, do **not** mechanically open every bundled reference or schema before starting. This `skill.md` contains the operating contract. Consult a specific reference only when a capability, privacy, format, or trust question is ambiguous. The bundled standard-library finalizer validates the completed artifact against the actual v1 schemas before creating a receipt.
 
+Claude.ai-specific completeness rule: for an ordinary `ai_generated` Claude.ai capture, set `capture.completeness.status` to `unknown` by default. Do not use `complete` merely because the visible chat appears whole. Use `complete` only when separate host/API/export evidence affirmatively establishes completeness for the declared scope and record that evidence in `capture.completeness.evidence_reference`. The finalizer rejects `ai_generated` + `complete` when that evidence reference is absent.
+
 If this file conflicts with the trust model or schemas, use the stricter interpretation and disclose the conflict rather than inventing a workaround.
 """
 
@@ -63,7 +65,7 @@ HASHING_CLAUDE = """Preferred Claude.ai method when Python 3 is available:
 python scripts/finalize_proofstamp.py path/to/session.proofstamp.json
 ```
 
-Run this **once after the final artifact has been written**. It validates the session against the bundled v1 JSON Schema using only Python's standard library, reads and hashes the exact saved artifact bytes twice before creating the receipt, validates the receipt schema, independently verifies the saved artifact against the receipt, and returns the verified SHA-256, byte size, completeness status, `mailto:` URI, and fallback email text.
+Run this **once after the final artifact has been written**. It validates the session against the bundled v1 JSON Schema using only Python's standard library, enforces capture trust rules that JSON Schema alone cannot express, reads and hashes the exact saved artifact bytes twice before creating the receipt, validates the receipt schema, independently verifies the saved artifact against the receipt, and returns the verified SHA-256, byte size, completeness status, `mailto:` URI, fallback email text, and a mandatory delivery instruction.
 
 Do not separately run `create_receipt.py`, `verify_proofstamp.py`, or `create_mailto.py` after a successful finalizer run. Those lower-level scripts remain available for debugging or hosts that cannot use the finalizer.
 """
@@ -79,9 +81,16 @@ python scripts/create_mailto.py \\
 Render the resulting URI as a clickable link labeled:
 """
 
-EMAIL_CLAUDE = """When the bundled finalizer succeeds, use the `mailto` value it already returned. Do not run another command merely to recreate the same handoff.
+EMAIL_CLAUDE = """When the bundled finalizer succeeds, use the exact `mailto` value it returned. Do not run another command merely to recreate the same handoff.
 
-Render that URI as a clickable link labeled:
+**Mandatory final-response check:** before ending a successful verified ProofStamp response, confirm that the response itself contains one of these two forms:
+
+1. a clickable link labeled `Email this ProofStamp` whose target is the exact returned `mailto` URI; or
+2. if Claude cannot render that link, the exact returned `email_text` fallback with a blank recipient.
+
+A verify URL, a link to `https://email.proofstamp.org/`, or telling the user they can prepare an email later does **not** satisfy the required email handoff. Never omit both handoff forms after successful verification.
+
+Render the resulting URI as a clickable link labeled:
 """
 
 
