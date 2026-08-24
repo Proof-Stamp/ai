@@ -91,7 +91,7 @@ class ClaudePackageTests(unittest.TestCase):
             "private chain-of-thought",
             "provider_signed",
             "capture.completeness",
-            "unknown` is the safe default",
+            "For `ai_generated` captures, do not use `complete`",
             "Conversation coverage",
             "not independently confirmed",
             "Never claim `verified: true`",
