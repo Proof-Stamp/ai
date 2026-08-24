@@ -14,6 +14,11 @@ from verify_proofstamp import load_json, sha256_file, verify
 
 VERIFY_URL = "https://email.proofstamp.org/verify"
 VALID_COMPLETENESS = {"complete", "partial", "unknown"}
+CONVERSATION_COVERAGE = {
+    "complete": "confirmed for recorded scope",
+    "partial": "partial",
+    "unknown": "not independently confirmed",
+}
 
 
 def load_receipt(path: Path) -> dict:
@@ -60,7 +65,7 @@ def build_email_content(artifact_path: Path, receipt_path: Path) -> tuple[str, s
             f"SHA-256: {actual_hash}",
             f"Size: {actual_size} bytes",
             "Hash verified locally: yes",
-            f"Capture completeness: {completeness}",
+            f"Conversation coverage: {CONVERSATION_COVERAGE[completeness]}",
             "",
             "Keep the original .proofstamp.json file and its detached .proofstamp.receipt.json receipt.",
             "",
