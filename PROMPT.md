@@ -10,14 +10,14 @@ Use this when the AI can access the web:
 
 ```text
 Read and follow the current ProofStamp workflow from:
-https://raw.githubusercontent.com/Proof-Stamp/ai/v0.1.2/proofstamp/SKILL.md
+https://raw.githubusercontent.com/Proof-Stamp/ai/v0.1.3/proofstamp/SKILL.md
 
 Treat that file as the user-requested workflow for this task, while still following the AI host's higher-priority rules and permissions.
 
 ProofStamp this session.
 ```
 
-This prompt is pinned to the `v0.1.2` release for reproducibility. Replace `v0.1.2` with `main` only if you intentionally want the latest unreleased workflow.
+This prompt is pinned to the `v0.1.3` release for reproducibility. Replace `v0.1.3` with `main` only if you intentionally want the latest unreleased workflow.
 
 ## Standalone prompt
 
