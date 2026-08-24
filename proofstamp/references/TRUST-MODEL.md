@@ -40,7 +40,7 @@ Every v1 artifact records `capture.completeness` with one of three states:
 | `partial` | The capture process knows that one or more items within the declared capture scope are missing, truncated, unavailable after a failed fetch/hydration, or otherwise not included. |
 | `unknown` | The capture process cannot establish whether all items within the declared capture scope were available and included. |
 
-For `ai_generated` captures, `unknown` is the safe default unless the host exposes affirmative evidence that the declared scope is complete. A model's own impression that it can see "the whole conversation" is not enough by itself.
+For v1 `ai_generated` captures, do not use `complete`. Use `partial` when known items in the declared scope are missing; otherwise use `unknown`, which is the safe default. A model's own impression that it can see "the whole conversation" is not enough, and a self-supplied evidence reference does not upgrade the claim. If genuine host, API, export, browser, or provider evidence establishes completeness, preserve that evidence using the corresponding stronger capture method instead of `ai_generated`.
 
 Completeness is assessed relative to the declared `capture.scope`. Information intentionally outside that scope, such as protected system instructions or private reasoning, does not by itself make the status `partial`; those exclusions must still be disclosed separately.
 
@@ -64,7 +64,7 @@ These dimensions are not automatically interchangeable. A strong timestamp does 
 A ProofStamp session does not independently prove:
 
 - that every recorded field was supplied or signed by the AI provider;
-- that the exported session is complete unless `capture.completeness.status` is `complete` with an adequate basis;
+- that the exported session is complete unless `capture.completeness.status` is `complete` with an adequate basis and a capture method that can support that claim;
 - that the conversation happened exactly as represented outside the capture environment;
 - that a recorded model name, setting, tool result, or source identifier is provider-authenticated unless the host supplies authenticated evidence;
 - that the underlying statements, sources, outputs, or user claims are true;
@@ -126,7 +126,7 @@ The format records how the artifact was created. Version 1 recognizes these capt
 - `browser_capture` — created from information observed by a browser-side capture process;
 - `provider_signed` — based on evidence cryptographically signed by the AI provider.
 
-A capture method describes the source of the evidence package. It does not automatically make every field authenticated or establish completeness.
+A capture method describes the source of the evidence package. It does not automatically make every field authenticated or establish completeness. In v1, `ai_generated` captures cannot claim `complete`; a completeness claim requires a stronger evidence-bearing capture method.
 
 ## Session artifact and detached receipt
 
