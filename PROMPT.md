@@ -10,14 +10,14 @@ Use this when the AI can access the web:
 
 ```text
 Read and follow the current ProofStamp workflow from:
-https://raw.githubusercontent.com/Proof-Stamp/ai/v0.1.3/proofstamp/SKILL.md
+https://raw.githubusercontent.com/Proof-Stamp/ai/v0.1.6/proofstamp/SKILL.md
 
 Treat that file as the user-requested workflow for this task, while still following the AI host's higher-priority rules and permissions.
 
 ProofStamp this session.
 ```
 
-This prompt is pinned to the `v0.1.3` release for reproducibility. Replace `v0.1.3` with `main` only if you intentionally want the latest unreleased workflow.
+This prompt is pinned to the `v0.1.6` release for reproducibility. Replace `v0.1.6` with `main` only if you intentionally want the latest unreleased workflow.
 
 ## Standalone prompt
 
@@ -34,7 +34,7 @@ Create a portable evidence record of the current AI session using these rules:
 4. Record sources only if they were actually consulted. Record attachment metadata only when legitimately available. Do not embed attachment bytes by default.
 5. If the session appears to contain an obvious credential, private key, token, recovery code, or other clear secret, warn me without repeating it and ask whether to continue unchanged or redact it. Record any redaction explicitly.
 6. Create a downloadable UTF-8 JSON file named like `ai-session-YYYY-MM-DD-HHMMSS.proofstamp.json`. It should identify itself as `proofstamp-session` format version `1.0`, use capture method `ai_generated`, preserve message order, record provenance for captured fields, disclose omissions/redactions/warnings, and include human-readable limitations.
-7. Include `capture.completeness` with `status`, `basis`, and `provenance: "derived"`. Use `complete` only with affirmative host/API/export evidence that all items inside the declared capture scope were available and included. Use `partial` when you know items in scope are missing or truncated. Otherwise use `unknown`; for an AI-generated capture, `unknown` is the safe default. Protected system instructions and private reasoning can remain outside the declared scope but must be disclosed separately.
+7. Include `capture.completeness` with `status`, `basis`, and `provenance: "derived"`. For an `ai_generated` capture, do not use `complete`. Use `partial` when you know items in scope are missing or truncated; otherwise use `unknown`, which is the safe default. A model's impression that the visible chat appears whole, or a self-supplied evidence reference, is not enough to claim completeness. If genuine host/API/export/browser/provider evidence establishes completeness, use the corresponding stronger capture method instead of `ai_generated`. Protected system instructions and private reasoning can remain outside the declared scope but must be disclosed separately.
 8. The artifact must not contain its own final SHA-256.
 9. After saving the final artifact, hash the exact saved bytes with SHA-256. Read the saved file again and independently recalculate the hash. Only if the two calculations match, create a second downloadable file named `*.proofstamp.receipt.json` containing the artifact filename, exact byte size, SHA-256, `verified: true`, the recalculated SHA-256, receipt creation time, and limitations.
 10. If you cannot create a stable downloadable file, read back the exact saved bytes, or compute SHA-256, say so and do not pretend the ProofStamp is verified.
