@@ -1,4 +1,5 @@
 import importlib.util
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -32,8 +33,8 @@ class ClaudePackageTests(unittest.TestCase):
                 self.assertIn("proofstamp/skill.md", names)
                 self.assertNotIn("proofstamp/SKILL.md", names)
                 self.assertTrue(all(name.startswith("proofstamp/") for name in names))
-                self.assertIn("proofstamp/scripts/finalize_proofstamp.py", names)
-                self.assertIn("proofstamp/scripts/validate_proofstamp.py", names)
+                for required in self.builder.REQUIRED_PACKAGE_FILES:
+                    self.assertIn(required, names)
 
                 skill_text = zf.read("proofstamp/skill.md").decode("utf-8")
                 self.assertTrue(skill_text.startswith("---\n"))
@@ -58,6 +59,16 @@ class ClaudePackageTests(unittest.TestCase):
             with ZipFile(output) as zf:
                 for source_path, archive_name in self.builder.package_files(REPO_ROOT / "proofstamp"):
                     self.assertEqual(source_path.read_bytes(), zf.read(archive_name), archive_name)
+
+    def test_incomplete_source_tree_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "repo"
+            source = repo_root / "proofstamp"
+            shutil.copytree(REPO_ROOT / "proofstamp", source)
+            (source / "scripts" / "finalize_proofstamp.py").unlink()
+
+            with self.assertRaisesRegex(FileNotFoundError, "finalize_proofstamp.py"):
+                self.builder.build(repo_root, Path(tmp) / "proofstamp.zip")
 
     def test_adapter_changes_manifest_only_and_keeps_canonical_runtime(self):
         canonical_text = (REPO_ROOT / "proofstamp" / "SKILL.md").read_text(encoding="utf-8")
