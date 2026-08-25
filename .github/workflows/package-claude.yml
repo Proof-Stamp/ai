@@ -47,17 +47,34 @@ jobs:
       - name: Build Claude skill package
         run: python scripts/build_claude_skill.py
 
-      - name: Validate ZIP layout
+      - name: Validate complete ZIP layout
         run: |
           python - <<'PY'
           from zipfile import ZipFile
+
           path = 'dist/claude/proofstamp.zip'
+          required = {
+              'proofstamp/skill.md',
+              'proofstamp/references/TRUST-MODEL.md',
+              'proofstamp/references/FORMAT.md',
+              'proofstamp/references/PRIVACY.md',
+              'proofstamp/references/PLATFORM-CAPABILITIES.md',
+              'proofstamp/references/platforms/claude.md',
+              'proofstamp/schemas/proofstamp-session-v1.schema.json',
+              'proofstamp/schemas/proofstamp-receipt-v1.schema.json',
+              'proofstamp/scripts/finalize_proofstamp.py',
+              'proofstamp/scripts/validate_proofstamp.py',
+              'proofstamp/scripts/create_receipt.py',
+              'proofstamp/scripts/verify_proofstamp.py',
+              'proofstamp/scripts/create_mailto.py',
+          }
           with ZipFile(path) as zf:
-              names = zf.namelist()
-              assert 'proofstamp/skill.md' in names
+              names = set(zf.namelist())
+              missing = sorted(required - names)
+              assert not missing, f'missing required Claude skill files: {missing}'
               assert 'proofstamp/SKILL.md' not in names
               assert all(name.startswith('proofstamp/') for name in names)
-          print(path)
+          print(f'{path}: complete ({len(names)} files)')
           PY
 
       - name: Upload workflow artifact
