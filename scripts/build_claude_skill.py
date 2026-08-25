@@ -15,6 +15,29 @@ CLAUDE_DESCRIPTION = (
 )
 FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 
+# A Claude package without these files cannot perform the normal v1 workflow.
+# Keep this list explicit so an incomplete checkout or hand-built package fails closed.
+REQUIRED_SOURCE_FILES = (
+    "SKILL.md",
+    "references/TRUST-MODEL.md",
+    "references/FORMAT.md",
+    "references/PRIVACY.md",
+    "references/PLATFORM-CAPABILITIES.md",
+    "references/platforms/claude.md",
+    "schemas/proofstamp-session-v1.schema.json",
+    "schemas/proofstamp-receipt-v1.schema.json",
+    "scripts/finalize_proofstamp.py",
+    "scripts/validate_proofstamp.py",
+    "scripts/create_receipt.py",
+    "scripts/verify_proofstamp.py",
+    "scripts/create_mailto.py",
+)
+
+REQUIRED_PACKAGE_FILES = tuple(
+    "proofstamp/skill.md" if path == "SKILL.md" else f"proofstamp/{path}"
+    for path in REQUIRED_SOURCE_FILES
+)
+
 
 def split_frontmatter(text: str) -> tuple[str, str]:
     if not text.startswith("---\n"):
@@ -46,6 +69,13 @@ def claude_skill_md(canonical_text: str) -> str:
     return manifest + body
 
 
+def validate_source_tree(source_dir: Path) -> None:
+    missing = [path for path in REQUIRED_SOURCE_FILES if not (source_dir / path).is_file()]
+    if missing:
+        joined = ", ".join(missing)
+        raise FileNotFoundError(f"incomplete ProofStamp skill source; missing required file(s): {joined}")
+
+
 def package_files(source_dir: Path) -> list[tuple[Path, str]]:
     files: list[tuple[Path, str]] = []
     for path in sorted(source_dir.rglob("*")):
@@ -65,11 +95,23 @@ def write_member(zf: ZipFile, archive_name: str, data: bytes) -> None:
     zf.writestr(info, data)
 
 
+def validate_package(output: Path) -> None:
+    with ZipFile(output) as zf:
+        names = set(zf.namelist())
+    missing = [path for path in REQUIRED_PACKAGE_FILES if path not in names]
+    if missing:
+        joined = ", ".join(missing)
+        raise ValueError(f"incomplete Claude package; missing required file(s): {joined}")
+    if "proofstamp/SKILL.md" in names:
+        raise ValueError("Claude package must use proofstamp/skill.md, not the canonical SKILL.md")
+    if any(not name.startswith("proofstamp/") for name in names):
+        raise ValueError("Claude package contains files outside the proofstamp/ root")
+
+
 def build(repo_root: Path, output: Path) -> Path:
     source_dir = repo_root / "proofstamp"
+    validate_source_tree(source_dir)
     canonical = source_dir / "SKILL.md"
-    if not canonical.is_file():
-        raise FileNotFoundError(f"missing canonical skill: {canonical}")
     if len(CLAUDE_NAME) > 64:
         raise ValueError("Claude skill name exceeds 64 characters")
     if len(CLAUDE_DESCRIPTION) > 200:
@@ -83,6 +125,7 @@ def build(repo_root: Path, output: Path) -> Path:
         for source_path, archive_name in package_files(source_dir):
             write_member(zf, archive_name, source_path.read_bytes())
 
+    validate_package(output)
     return output
 
 

@@ -8,6 +8,12 @@ on:
         required: true
   release:
     types: [published]
+  pull_request:
+    paths:
+      - "proofstamp/**"
+      - "scripts/build_claude_skill.py"
+      - "tests/test_claude_package.py"
+      - ".github/workflows/package-claude.yml"
 
 permissions:
   contents: write
@@ -18,26 +24,34 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Check out repository with tag history
+      - name: Check out repository with history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set package tag
-        id: package_tag
+      - name: Set package source
+        id: package_source
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
-            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+            echo "label=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+            echo "attach_release=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ref=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+            echo "label=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+            echo "attach_release=true" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+            echo "label=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+            echo "attach_release=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Use canonical ProofStamp source from release tag
+      - name: Use canonical ProofStamp source from selected ref
         shell: bash
         run: |
-          git rev-parse --verify "refs/tags/${{ steps.package_tag.outputs.tag }}"
-          git checkout "${{ steps.package_tag.outputs.tag }}" -- proofstamp
+          git rev-parse --verify "${{ steps.package_source.outputs.ref }}"
+          git checkout "${{ steps.package_source.outputs.ref }}" -- proofstamp
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -47,28 +61,46 @@ jobs:
       - name: Build Claude skill package
         run: python scripts/build_claude_skill.py
 
-      - name: Validate ZIP layout
+      - name: Validate complete ZIP layout
         run: |
           python - <<'PY'
           from zipfile import ZipFile
+
           path = 'dist/claude/proofstamp.zip'
+          required = {
+              'proofstamp/skill.md',
+              'proofstamp/references/TRUST-MODEL.md',
+              'proofstamp/references/FORMAT.md',
+              'proofstamp/references/PRIVACY.md',
+              'proofstamp/references/PLATFORM-CAPABILITIES.md',
+              'proofstamp/references/platforms/claude.md',
+              'proofstamp/schemas/proofstamp-session-v1.schema.json',
+              'proofstamp/schemas/proofstamp-receipt-v1.schema.json',
+              'proofstamp/scripts/finalize_proofstamp.py',
+              'proofstamp/scripts/validate_proofstamp.py',
+              'proofstamp/scripts/create_receipt.py',
+              'proofstamp/scripts/verify_proofstamp.py',
+              'proofstamp/scripts/create_mailto.py',
+          }
           with ZipFile(path) as zf:
-              names = zf.namelist()
-              assert 'proofstamp/skill.md' in names
+              names = set(zf.namelist())
+              missing = sorted(required - names)
+              assert not missing, f'missing required Claude skill files: {missing}'
               assert 'proofstamp/SKILL.md' not in names
               assert all(name.startswith('proofstamp/') for name in names)
-          print(path)
+          print(f'{path}: complete ({len(names)} files)')
           PY
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: proofstamp-claude-skill-${{ steps.package_tag.outputs.tag }}
+          name: proofstamp-claude-skill-${{ steps.package_source.outputs.label }}
           path: dist/claude/proofstamp.zip
           if-no-files-found: error
 
       - name: Attach package to release
+        if: steps.package_source.outputs.attach_release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.package_tag.outputs.tag }}
+          TAG: ${{ steps.package_source.outputs.ref }}
         run: gh release upload "$TAG" dist/claude/proofstamp.zip --clobber

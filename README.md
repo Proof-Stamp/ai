@@ -37,6 +37,20 @@ npx skills add https://github.com/Proof-Stamp/ai --skill proofstamp
 
 The installable skill lives in [`proofstamp/`](proofstamp/) and is listed on [skills.sh](https://skills.sh/proof-stamp/ai/proofstamp).
 
+### Claude.ai
+
+For Claude.ai, upload the generated **Claude skill package** from the GitHub Release assets. Do not upload only `proofstamp/SKILL.md`, and do not use the repository source ZIP as a substitute for the Claude package.
+
+A complete Claude package must contain the runtime file plus the bundled `references/`, `schemas/`, and `scripts/` directories. Without those support files, Claude can only perform a best-effort manual capture and cannot run the official deterministic finalizer or schema validation.
+
+To build the package from a checkout:
+
+```bash
+python scripts/build_claude_skill.py
+```
+
+The output is `dist/claude/proofstamp.zip`. The builder fails closed if required runtime resources are missing and validates the package before returning success.
+
 ### Use it without installing anything
 
 Open [`PROMPT.md`](PROMPT.md). It includes:
