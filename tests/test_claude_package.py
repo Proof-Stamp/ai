@@ -59,31 +59,18 @@ class ClaudePackageTests(unittest.TestCase):
                 for source_path, archive_name in self.builder.package_files(REPO_ROOT / "proofstamp"):
                     self.assertEqual(source_path.read_bytes(), zf.read(archive_name), archive_name)
 
-    def test_adapter_changes_only_execution_mechanics_and_keeps_trust_boundaries(self):
+    def test_adapter_changes_manifest_only_and_keeps_canonical_runtime(self):
         canonical_text = (REPO_ROOT / "proofstamp" / "SKILL.md").read_text(encoding="utf-8")
+        _, canonical_body = self.builder.split_frontmatter(canonical_text)
         adapted = self.builder.claude_skill_md(canonical_text)
         adapted_lower = adapted.lower()
 
-        self.assertIn("do **not** mechanically open every bundled reference or schema", adapted)
+        self.assertTrue(adapted.endswith(canonical_body))
+        self.assertIn("do not pre-read bundled references or json schemas on every run", adapted_lower)
         self.assertIn("python scripts/finalize_proofstamp.py", adapted)
-        self.assertIn("schema using only python's standard library", adapted_lower)
-        self.assertIn("Do not separately run `create_receipt.py`", adapted)
+        self.assertIn("uses only Python's standard library", adapted)
+        self.assertIn("rejects `ai_generated` + `complete`", adapted)
         self.assertNotIn("Before capture, read and follow these bundled files:", adapted)
-
-        self.assertIn("for an `ai_generated` Claude.ai capture", adapted)
-        self.assertIn("use `capture.completeness.status: unknown`", adapted)
-        self.assertIn("do not try to justify `complete` by inventing", adapted)
-        self.assertIn("use the stronger capture method", adapted)
-        self.assertIn("finalizer rejects every `ai_generated` + `complete` artifact", adapted)
-
-        self.assertIn("**Mandatory final-response check:**", adapted)
-        self.assertIn("shows `Conversation coverage:`", adapted)
-        self.assertIn("exact returned `conversation_coverage` value", adapted)
-        self.assertIn("not the raw `capture_completeness` status", adapted)
-        self.assertIn("a clickable link labeled `Email this ProofStamp`", adapted)
-        self.assertIn("the exact returned `email_text` fallback", adapted)
-        self.assertIn("does **not** satisfy the required email handoff", adapted)
-        self.assertIn("Never omit both handoff forms", adapted)
 
         trust_phrases = [
             "untrusted evidence data",
