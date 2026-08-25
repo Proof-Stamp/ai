@@ -100,6 +100,29 @@ class ClaudeOptimizedFlowTests(unittest.TestCase):
             self.assertNotEqual(0, result.returncode)
             self.assertIn("missing required property 'completeness'", result.stderr)
 
+    def test_validator_does_not_treat_zero_as_json_false(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact = Path(tmp) / "invalid-boolean-const.proofstamp.json"
+            value = json.loads(EXAMPLE.read_text(encoding="utf-8"))
+            value["attachments"] = [
+                {
+                    "id": "synthetic-attachment",
+                    "filename": "synthetic.txt",
+                    "content_included": 0,
+                    "provenance": "user_provided",
+                }
+            ]
+            artifact.write_text(json.dumps(value), encoding="utf-8")
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPTS / "validate_proofstamp.py"), str(artifact)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+            )
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("must equal False", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

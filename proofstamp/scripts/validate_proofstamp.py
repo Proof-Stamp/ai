@@ -39,6 +39,27 @@ def resolve_ref(root: dict, ref: str) -> dict:
     return node
 
 
+def json_equal(left: object, right: object) -> bool:
+    """Compare JSON values without conflating booleans with numbers."""
+    if isinstance(left, bool) or isinstance(right, bool):
+        return isinstance(left, bool) and isinstance(right, bool) and left == right
+    if left is None or right is None:
+        return left is None and right is None
+    if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+        return left == right
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, list):
+        return len(left) == len(right) and all(
+            json_equal(a, b) for a, b in zip(left, right)
+        )
+    if isinstance(left, dict):
+        return left.keys() == right.keys() and all(
+            json_equal(left[key], right[key]) for key in left
+        )
+    return left == right
+
+
 def type_matches(value: object, expected: str) -> bool:
     if expected == "object":
         return isinstance(value, dict)
@@ -62,16 +83,13 @@ def validate_format(value: str, fmt: str) -> bool:
         parsed = urlparse(value)
         return bool(parsed.scheme)
     if fmt == "date-time":
+        candidate = value[:-1] + "+00:00" if value.endswith("Z") else value
         try:
-            datetime.fromisoformat(value.replace("Z", "+00:00"))
-            return "T" in value
+            parsed = datetime.fromisoformat(candidate)
+            return "T" in value and parsed.tzinfo is not None
         except ValueError:
             return False
     raise ValueError(f"unsupported schema format: {fmt}")
-
-
-def canonical_json(value: object) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
 def validate_node(value: object, schema: dict, root: dict, path: str = "$") -> list[str]:
@@ -82,21 +100,19 @@ def validate_node(value: object, schema: dict, root: dict, path: str = "$") -> l
 
     if "oneOf" in schema:
         matches = 0
-        candidate_errors: list[list[str]] = []
         for candidate in schema["oneOf"]:
             errs = validate_node(value, candidate, root, path)
-            candidate_errors.append(errs)
             if not errs:
                 matches += 1
         if matches != 1:
             errors.append(f"{path}: must match exactly one oneOf branch (matched {matches})")
         return errors
 
-    if "const" in schema and value != schema["const"]:
+    if "const" in schema and not json_equal(value, schema["const"]):
         errors.append(f"{path}: must equal {schema['const']!r}")
         return errors
 
-    if "enum" in schema and value not in schema["enum"]:
+    if "enum" in schema and not any(json_equal(value, item) for item in schema["enum"]):
         errors.append(f"{path}: value {value!r} is not in the allowed enum")
         return errors
 
@@ -129,12 +145,9 @@ def validate_node(value: object, schema: dict, root: dict, path: str = "$") -> l
             errors.append(f"{path}: must contain at least {min_items} item(s)")
 
         if schema.get("uniqueItems"):
-            seen: set[str] = set()
             for index, item in enumerate(value):
-                marker = canonical_json(item)
-                if marker in seen:
+                if any(json_equal(item, earlier) for earlier in value[:index]):
                     errors.append(f"{path}[{index}]: duplicate item is not allowed")
-                seen.add(marker)
 
         item_schema = schema.get("items")
         if item_schema is not None:

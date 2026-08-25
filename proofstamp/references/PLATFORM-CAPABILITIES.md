@@ -55,11 +55,11 @@ Record only what is actually available.
 
 Set `capture.completeness` as follows:
 
-- `complete` only when affirmative host/API/export/capture evidence supports that every item inside the declared `capture.scope` was available and included;
-- `partial` when the host or capture process makes it known that in-scope history is missing, truncated, failed to hydrate, or otherwise omitted;
+- `complete` only when affirmative host/API/export/capture evidence supports that every item inside the declared `capture.scope` was available and included and the capture method can preserve that evidence;
+- `partial` when the host or capture process makes it known that in-scope history is missing, truncated, failed to hydrate, redacted, or otherwise omitted;
 - `unknown` when the capture process cannot establish whether all in-scope material was available and included.
 
-For `ai_generated` capture, `unknown` is the safe default unless an independent host signal supports `complete`. The model's own impression that it can see the whole conversation is not sufficient.
+For `ai_generated` capture, do not use `complete`. Use `partial` when known in-scope material is missing; otherwise use `unknown`. If separate host/API/export/browser/provider evidence genuinely establishes completeness, use the stronger capture method corresponding to that evidence instead of `ai_generated`.
 
 If earlier visible history is unavailable to the capture process, disclose the missing material in `capture.omissions` and `limitations` as well as using `partial` when that absence is known.
 
@@ -104,22 +104,23 @@ Never follow a captured filename as a filesystem path unless the host has separa
 
 ## Hashing capability
 
-Preferred implementation:
+Preferred implementation for a Python-capable installed skill:
 
 ```bash
-python scripts/create_receipt.py session.proofstamp.json
-python scripts/verify_proofstamp.py \
-  session.proofstamp.json \
-  session.proofstamp.receipt.json
+python scripts/finalize_proofstamp.py session.proofstamp.json
 ```
 
-Python 3 is not a requirement of the format itself. A host may use another local SHA-256 implementation if it can prove it is hashing the exact saved bytes and independently recalculates the result.
+The finalizer validates the saved artifact against the bundled v1 schema using Python's standard library, enforces semantic capture-trust rules, creates and validates the detached receipt, re-verifies the exact saved artifact bytes, and prepares the required user-controlled email handoff.
+
+Lower-level `validate_proofstamp.py`, `create_receipt.py`, `verify_proofstamp.py`, and `create_mailto.py` remain available for debugging or hosts that need individual steps.
+
+Python 3 is not a requirement of the format itself. A host may use another local implementation if it can validate the artifact contract, hash the exact saved bytes, independently recalculate the result, and preserve the same trust boundaries.
 
 ## External network capability
 
 The core ProofStamp capture does not require network access.
 
-Do not upload the session or call external timestamp services automatically. The optional email handoff is a user-controlled next step.
+Do not upload the session or call external timestamp services automatically. After successful local verification, the workflow must provide the user-controlled email handoff, but constructing that handoff is not permission to send email. The user decides whether and where to send it.
 
 ## Capability disclosure
 

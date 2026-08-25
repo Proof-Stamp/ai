@@ -99,7 +99,7 @@ Allowed statuses:
 - `partial` — the capture process knows that one or more items within the declared scope are missing or truncated;
 - `unknown` — the capture process cannot establish completeness.
 
-For `ai_generated` captures, use `unknown` unless the host exposes affirmative completeness evidence. A model self-report alone is not sufficient to claim `complete`.
+For `ai_generated` captures, do not use `complete`. Use `partial` when known in-scope material is missing; otherwise use `unknown`. If genuine host, API, export, browser, or provider evidence establishes completeness, preserve that evidence with the corresponding stronger capture method rather than upgrading an `ai_generated` capture.
 
 Completeness is relative to the declared scope. Protected system instructions and private reasoning may be intentionally outside scope and still must be disclosed as unavailable or excluded.
 
@@ -208,23 +208,28 @@ example-session.proofstamp.receipt.json
 
 ## 5. Reference implementation
 
-Create a detached receipt:
+For the normal Python-capable installed-skill path, prefer the one-command finalizer after the final session artifact has been written:
 
 ```bash
-python scripts/create_receipt.py path/to/session.proofstamp.json
+python scripts/finalize_proofstamp.py path/to/session.proofstamp.json
 ```
 
-Verify an artifact and receipt:
+The finalizer validates the session against the bundled v1 schema using Python's standard library, enforces capture trust rules that JSON Schema alone cannot express, creates and validates the detached receipt, independently verifies the exact saved artifact bytes, and prepares the required user-controlled email handoff.
+
+Lower-level scripts remain available for debugging or independent use:
 
 ```bash
+python scripts/validate_proofstamp.py path/to/session.proofstamp.json
+python scripts/create_receipt.py path/to/session.proofstamp.json
 python scripts/verify_proofstamp.py \
+  path/to/session.proofstamp.json \
+  path/to/session.proofstamp.receipt.json
+python scripts/create_mailto.py \
   path/to/session.proofstamp.json \
   path/to/session.proofstamp.receipt.json
 ```
 
-The scripts use Python's standard library for hashing and receipt verification.
-
-Schema validation in the repository test suite uses `jsonschema`.
+The installed runtime validator is dependency-free. The repository test suite also uses `jsonschema` as an independent contract check.
 
 ## 6. Synthetic example
 
@@ -245,11 +250,13 @@ After local verification, a user can submit the artifact fingerprint to an exter
 
 For the ProofStamp email workflow, the intended pattern is:
 
-1. download or retain the exact `.proofstamp.json` artifact
-2. let `email.proofstamp.org` hash that exact file locally
-3. compare the browser-computed SHA-256 with the detached receipt
-4. send the ProofStamp email
-5. preserve the email receipt as external evidence that the fingerprint reached the inbox by that recorded time
+1. retain the exact `.proofstamp.json` artifact and detached receipt
+2. use the verified fingerprint to prepare the user-controlled email handoff
+3. let the user choose the recipient and send the email through their email client
+4. preserve the resulting email record as external evidence that the fingerprint reached that email system by its recorded receipt time
+5. independently re-check the retained artifact later at `https://email.proofstamp.org/verify` when useful
+
+The session artifact does not need to be uploaded to ProofStamp to create or verify its fingerprint. Sending the email is the user's choice; ProofStamp does not send it automatically.
 
 External time evidence applies to the fingerprint. It does not prove when the underlying AI conversation originally occurred.
 
@@ -260,7 +267,7 @@ Stronger timestamp mechanisms, such as RFC 3161 or OpenTimestamps, can be added 
 A valid ProofStamp v1 artifact and receipt do not independently prove:
 
 - provider authentication
-- session completeness unless the artifact explicitly records `complete` with an adequate basis
+- session completeness unless the artifact explicitly records `complete` with an adequate basis and a capture method capable of supporting that claim
 - truth of message content
 - authorship
 - original creation time

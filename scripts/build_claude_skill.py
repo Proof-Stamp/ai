@@ -15,86 +15,6 @@ CLAUDE_DESCRIPTION = (
 )
 FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 
-REQUIRED_CONTRACT_OLD = """## Required contract
-
-Before capture, read and follow these bundled files:
-
-1. `references/TRUST-MODEL.md`
-2. `references/FORMAT.md`
-3. `references/PRIVACY.md`
-4. `references/PLATFORM-CAPABILITIES.md`
-5. `schemas/proofstamp-session-v1.schema.json`
-6. `schemas/proofstamp-receipt-v1.schema.json`
-
-The trust model and schemas are authoritative. If this file conflicts with them, use the stricter interpretation and disclose the conflict rather than inventing a workaround.
-"""
-
-REQUIRED_CONTRACT_CLAUDE = """## Required contract
-
-The bundled trust model and schemas remain authoritative:
-
-1. `references/TRUST-MODEL.md`
-2. `references/FORMAT.md`
-3. `references/PRIVACY.md`
-4. `references/PLATFORM-CAPABILITIES.md`
-5. `schemas/proofstamp-session-v1.schema.json`
-6. `schemas/proofstamp-receipt-v1.schema.json`
-
-For a routine Claude.ai ProofStamp, do **not** mechanically open every bundled reference or schema before starting. This `skill.md` contains the operating contract. Consult a specific reference only when a capability, privacy, format, or trust question is ambiguous. The bundled standard-library finalizer validates the completed artifact against the actual v1 schemas before creating a receipt.
-
-Claude.ai-specific completeness rule: for an `ai_generated` Claude.ai capture, use `capture.completeness.status: unknown`. Do not use `complete` merely because the visible chat appears whole, and do not try to justify `complete` by inventing or self-asserting an evidence reference. If separate host/API/export/provider evidence genuinely establishes completeness, use the stronger capture method that corresponds to that evidence instead of `ai_generated`. The finalizer rejects every `ai_generated` + `complete` artifact.
-
-If this file conflicts with the trust model or schemas, use the stricter interpretation and disclose the conflict rather than inventing a workaround.
-"""
-
-HASHING_OLD = """Preferred method when Python 3 is available:
-
-```bash
-python scripts/create_receipt.py path/to/session.proofstamp.json
-python scripts/verify_proofstamp.py \\
-  path/to/session.proofstamp.json \\
-  path/to/session.proofstamp.receipt.json
-```
-
-The creation script reads the saved artifact twice before creating the receipt. The verification script hashes the saved artifact again and compares filename, size, fingerprint, and receipt fields.
-"""
-
-HASHING_CLAUDE = """Preferred Claude.ai method when Python 3 is available:
-
-```bash
-python scripts/finalize_proofstamp.py path/to/session.proofstamp.json
-```
-
-Run this **once after the final artifact has been written**. It validates the session against the bundled v1 JSON Schema using only Python's standard library, enforces capture trust rules that JSON Schema alone cannot express, reads and hashes the exact saved artifact bytes twice before creating the receipt, validates the receipt schema, independently verifies the saved artifact against the receipt, and returns the verified SHA-256, byte size, raw machine completeness status, human-facing `conversation_coverage`, `mailto:` URI, fallback email text, and a mandatory delivery instruction.
-
-In the normal final response, show the returned `conversation_coverage` value as `Conversation coverage:`. Do not surface the raw `capture_completeness` value as `Capture completeness` unless the user asks for technical details.
-
-Do not separately run `create_receipt.py`, `verify_proofstamp.py`, or `create_mailto.py` after a successful finalizer run. Those lower-level scripts remain available for debugging or hosts that cannot use the finalizer.
-"""
-
-EMAIL_OLD = """Preferred method when Python 3 is available:
-
-```bash
-python scripts/create_mailto.py \\
-  path/to/session.proofstamp.json \\
-  path/to/session.proofstamp.receipt.json
-```
-
-Render the resulting URI as a clickable link labeled:
-"""
-
-EMAIL_CLAUDE = """When the bundled finalizer succeeds, use the exact `mailto` value it returned. Do not run another command merely to recreate the same handoff.
-
-**Mandatory final-response check:** before ending a successful verified ProofStamp response, confirm that the response itself:
-
-1. shows `Conversation coverage:` using the exact returned `conversation_coverage` value, not the raw `capture_completeness` status; and
-2. contains either a clickable link labeled `Email this ProofStamp` whose target is the exact returned `mailto` URI, or, if Claude cannot render that link, the exact returned `email_text` fallback with a blank recipient.
-
-A verify URL, a link to `https://email.proofstamp.org/`, or telling the user they can prepare an email later does **not** satisfy the required email handoff. Never omit both handoff forms after successful verification.
-
-Render the resulting URI as a clickable link labeled:
-"""
-
 
 def split_frontmatter(text: str) -> tuple[str, str]:
     if not text.startswith("---\n"):
@@ -112,21 +32,8 @@ def canonical_version(frontmatter: str) -> str:
     return match.group(1).strip()
 
 
-def adapt_claude_body(body: str) -> str:
-    replacements = [
-        (REQUIRED_CONTRACT_OLD, REQUIRED_CONTRACT_CLAUDE),
-        (HASHING_OLD, HASHING_CLAUDE),
-        (EMAIL_OLD, EMAIL_CLAUDE),
-    ]
-    adapted = body
-    for old, new in replacements:
-        if adapted.count(old) != 1:
-            raise ValueError("canonical SKILL.md changed: Claude adapter replacement anchor not found exactly once")
-        adapted = adapted.replace(old, new, 1)
-    return adapted
-
-
 def claude_skill_md(canonical_text: str) -> str:
+    """Replace only manifest frontmatter; keep the canonical runtime body byte-for-byte."""
     frontmatter, body = split_frontmatter(canonical_text)
     version = canonical_version(frontmatter)
     manifest = (
@@ -134,9 +41,9 @@ def claude_skill_md(canonical_text: str) -> str:
         f"name: {CLAUDE_NAME}\n"
         f"description: {CLAUDE_DESCRIPTION}\n"
         "---\n"
-        f"<!-- Generated from canonical ProofStamp skill version {version}. Claude adapter changes execution mechanics only; trust boundaries remain canonical. -->\n\n"
+        f"<!-- Generated from canonical ProofStamp skill version {version}. Claude packaging changes manifest mechanics only; runtime trust and execution rules remain canonical. -->\n\n"
     )
-    return manifest + adapt_claude_body(body)
+    return manifest + body
 
 
 def package_files(source_dir: Path) -> list[tuple[Path, str]]:
