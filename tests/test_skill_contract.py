@@ -26,6 +26,8 @@ class SkillContractTests(unittest.TestCase):
             "references/PLATFORM-CAPABILITIES.md",
             "schemas/proofstamp-session-v1.schema.json",
             "schemas/proofstamp-receipt-v1.schema.json",
+            "scripts/validate_proofstamp.py",
+            "scripts/finalize_proofstamp.py",
             "scripts/create_receipt.py",
             "scripts/verify_proofstamp.py",
             "scripts/create_mailto.py",
@@ -74,6 +76,15 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn(f"pinned to the `v{version}` release", self.prompt_text)
         self.assertIn(f"Current skill metadata: `{version}`", self.readme_text)
 
+    def test_skill_runtime_is_token_efficient(self):
+        self.assertLessEqual(len(SKILL_FILE.read_bytes()), 11000)
+        self.assertIn(
+            "Do not pre-read bundled references or JSON schemas on every run",
+            self.text,
+        )
+        self.assertIn("## Conditional references", self.text)
+        self.assertNotIn("Before capture, read and follow these bundled files:", self.text)
+
     def test_skill_has_prompt_injection_boundary(self):
         required_phrases = [
             "untrusted evidence data",
@@ -102,11 +113,13 @@ class SkillContractTests(unittest.TestCase):
         for phrase in required_phrases:
             self.assertIn(phrase.lower(), self.text.lower())
 
-    def test_skill_requires_exact_saved_byte_verification(self):
+    def test_skill_requires_deterministic_finalization_and_exact_saved_bytes(self):
         self.assertIn("exact saved bytes", self.text)
-        self.assertIn("create_receipt.py", self.text)
-        self.assertIn("verify_proofstamp.py", self.text)
+        self.assertIn("validate_proofstamp.py", self.text)
+        self.assertIn("finalize_proofstamp.py", self.text)
+        self.assertIn("only Python's standard library", self.text)
         self.assertIn("Never claim `verified: true`", self.text)
+        self.assertIn("rejects `ai_generated` + `complete`", self.text)
 
     def test_skill_requires_email_handoff_after_verified_delivery(self):
         required_phrases = [
