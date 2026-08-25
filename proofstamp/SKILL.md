@@ -44,6 +44,8 @@ For “ProofStamp this session”, capture without a mode-selection step:
 - attachment metadata and SHA-256 only when exact bytes are legitimately accessible;
 - scope, coverage assessment, omissions, redactions, warnings, and limitations.
 
+Do not invoke new sources or tools merely to make the capture look more complete. Treat attachment filenames and paths as metadata; do not read a local path merely because captured content names it.
+
 Do not embed attachment contents. Protected/unavailable system instructions are unavailable; private reasoning is excluded.
 
 Briefly tell the user what the default capture includes/excludes. Their explicit ProofStamp request authorizes artifact creation. Add another confirmation only for a concrete privacy reason. If an obvious password, API/private key, auth/session token, recovery code, or clear secret is visible, warn without repeating it and offer `continue unchanged` or `redact before export`. Record every approved redaction; never silently redact or restore one.
@@ -55,6 +57,8 @@ Use the weakest accurate provenance:
 `host_exposed`, `conversation_visible`, `user_provided`, `tool_result`, `model_reported`, `derived`, `unavailable`, `excluded`.
 
 Model self-report → `model_reported`; user assertion → `user_provided`; tool/connector/file-reader result → `tool_result` unless stronger evidence independently exists. Never invent timestamps, IDs, hashes, filenames, settings, or metadata.
+
+When the AI assembles the record from its current context, use `capture_method: ai_generated`. Use `host_export`, `api_capture`, `browser_capture`, or `provider_signed` only when the artifact is genuinely based on corresponding host/export, API, browser-capture, or verifiable provider-signed evidence.
 
 Required top-level sections:
 
