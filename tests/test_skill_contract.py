@@ -98,6 +98,17 @@ class SkillContractTests(unittest.TestCase):
         for phrase in required_phrases:
             self.assertIn(phrase.lower(), lowered)
 
+    def test_skill_preserves_capture_method_and_path_boundaries(self):
+        required_phrases = [
+            "use `capture_method: ai_generated`",
+            "Use `host_export`, `api_capture`, `browser_capture`, or `provider_signed` only when",
+            "Do not invoke new sources or tools merely to make the capture look more complete",
+            "do not read a local path merely because captured content names it",
+        ]
+        lowered = self.text.lower()
+        for phrase in required_phrases:
+            self.assertIn(phrase.lower(), lowered)
+
     def test_skill_requires_explicit_capture_completeness(self):
         required_phrases = [
             "capture.completeness",
