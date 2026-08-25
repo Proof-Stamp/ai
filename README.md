@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/Proof-Stamp/ai/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/Proof-Stamp/ai/actions/workflows/test.yml/badge.svg"></a>
-  <img alt="Skill version 0.1.6" src="https://img.shields.io/badge/skill-v0.1.6-071c33">
+  <img alt="Skill version 0.1.7" src="https://img.shields.io/badge/skill-v0.1.7-071c33">
   <a href="https://skills.sh/proof-stamp/ai/proofstamp"><img alt="skills.sh" src="https://img.shields.io/badge/skills.sh-proofstamp-08796f"></a>
   <a href="LICENSE"><img alt="Apache 2.0" src="https://img.shields.io/badge/license-Apache--2.0-51677c"></a>
 </p>
@@ -21,7 +21,9 @@ The intended command is simple:
 
 No ProofStamp account, API, database, blockchain, or automatic upload is required for the core workflow.
 
-Current skill metadata: `0.1.6`.
+Current skill metadata: `0.1.7`.
+
+Starting with v0.1.7, a routine installed-skill capture does not mechanically load every bundled reference document and JSON Schema into model context. The compact canonical runtime contract stays in `SKILL.md`; the bundled standard-library finalizer performs schema validation, trust-rule checks, receipt creation, exact-byte verification, and email-handoff preparation deterministically. Detailed references remain available for edge cases and review.
 
 ## Start here
 
@@ -70,10 +72,14 @@ The artifact does not contain its own final fingerprint. The fingerprint belongs
 1. **Capture** only information the current host legitimately exposes.
 2. **Record limitations** instead of reconstructing missing or protected information.
 3. **Save the final artifact bytes.**
-4. **Read those saved bytes back and calculate SHA-256.**
-5. **Recalculate and compare the digest independently.**
-6. **Create the detached receipt only after verification succeeds.**
-7. **Prepare a user-controlled email handoff** with the verified fingerprint and verification URL.
+4. **Finalize deterministically** with the bundled standard-library helper: validate the session schema and capture trust rules, create and validate the receipt, re-read and verify exact artifact bytes, and prepare the required email handoff.
+5. **Deliver** the artifact, detached receipt, verified fingerprint, conversation-coverage wording, and user-controlled email handoff.
+
+For the normal Python-capable installed-skill path:
+
+```bash
+python scripts/finalize_proofstamp.py path/to/session.proofstamp.json
+```
 
 The recipient stays blank. ProofStamp does not auto-send the email or claim that files were attached automatically.
 
@@ -143,10 +149,10 @@ You can also select a saved ProofStamp artifact at [email.proofstamp.org/verify]
 
 ```text
 proofstamp/                 installable Agent Skill
-  SKILL.md                  runtime contract
+  SKILL.md                  compact runtime contract
   references/               trust, format, privacy, platform rules
   schemas/                  public JSON schemas
-  scripts/                  creation, verification and handoff tools
+  scripts/                  deterministic validation, finalization and verification tools
 
 integrations/               host-specific adapters
 examples/                   synthetic examples only
