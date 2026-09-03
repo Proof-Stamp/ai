@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires current-conversation access and downloadable-file creation. Exact-byte verification requires local file readback and SHA-256; Python 3 can use the bundled dependency-free scripts. Host metadata is captured only when legitimately exposed.
 metadata:
   author: ProofStamp.org
-  version: "0.1.7"
+  version: "0.1.8"
 ---
 
 # ProofStamp
@@ -111,7 +111,7 @@ A successful verified ProofStamp delivery is not complete until it provides:
 
 The finalizer also returns raw `capture_completeness`; do not show raw `Capture completeness` unless asked. Human-facing mapping is `complete` → `confirmed for recorded scope`, `partial` → `partial`, `unknown` → `not independently confirmed`. Briefly state what was captured and important unavailable/excluded limits.
 
-The email handoff is required after successful exact-byte verification. Never silently omit both the mailto link and the fallback email text. The recipient must be blank. The handoff includes filename, SHA-256, byte size, `Hash verified locally: yes`, `Conversation coverage`, `https://email.proofstamp.org/verify`, and a claim limitation.
+The email handoff is required after successful exact-byte verification. Never silently omit both the mailto link and the fallback email text. The recipient must be blank. The human-readable body begins with the plain-text signature `ProofStamp͘`, and includes filename, SHA-256, byte size, `Hash verified locally: yes`, `Conversation coverage`, `https://email.proofstamp.org/verify`, and a claim limitation.
 
 A mailto link does not reliably attach files. Never claim files were automatically attached. Constructing it is not permission to send. Never send email automatically.
 
