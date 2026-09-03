@@ -2,7 +2,7 @@
 title: ProofStamp
 author: ProofStamp.org
 author_url: https://proofstamp.org/
-version: 0.1.1
+version: 0.1.2
 license: Apache-2.0
 description: Create a local ProofStamp artifact and verified detached receipt from Open WebUI chat context.
 """
@@ -27,7 +27,7 @@ from pydantic import BaseModel, Field
 
 
 VERIFY_URL = "https://email.proofstamp.org/verify"
-ACTION_VERSION = "0.1.1"
+ACTION_VERSION = "0.1.2"
 ARTIFACT_SUFFIX = ".proofstamp.json"
 RECEIPT_SUFFIX = ".proofstamp.receipt.json"
 REDACTION_MARKER = "[REDACTED BY USER CHOICE]"
@@ -476,6 +476,8 @@ def _coverage_label(artifact: dict[str, Any]) -> str:
 def _mailto(artifact_filename: str, sha256: str, size_bytes: int, coverage: str) -> str:
     body = "\n".join(
         [
+            "ProofStamp͘",
+            "",
             f"Filename: {artifact_filename}",
             f"SHA-256: {sha256}",
             f"Byte size: {size_bytes}",
@@ -501,6 +503,8 @@ def _fallback_email_text(
         [
             "To: ",
             f"Subject: ProofStamp: {artifact_filename}",
+            "",
+            "ProofStamp͘",
             "",
             f"Filename: {artifact_filename}",
             f"SHA-256: {sha256}",

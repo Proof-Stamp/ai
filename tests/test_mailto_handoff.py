@@ -68,6 +68,7 @@ class MailtoHandoffTests(unittest.TestCase):
         expected_size = receipt["artifact"]["size_bytes"]
 
         body = query["body"][0]
+        self.assertTrue(body.startswith("ProofStamp͘\n"))
         self.assertIn(f"File: {ARTIFACT.name}", body)
         self.assertIn(f"SHA-256: {expected_hash}", body)
         self.assertIn(f"Size: {expected_size} bytes", body)
@@ -86,6 +87,7 @@ class MailtoHandoffTests(unittest.TestCase):
 
         text = result.stdout
         self.assertTrue(text.startswith("To:\nSubject: ProofStamp:"))
+        self.assertIn("\n\nProofStamp͘\n", text)
         self.assertIn(f"File: {ARTIFACT.name}", text)
         self.assertIn("SHA-256:", text)
         self.assertIn("Size:", text)

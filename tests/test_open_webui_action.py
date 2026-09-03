@@ -94,6 +94,7 @@ def sample_body():
 class OpenWebUIActionTests(unittest.TestCase):
     def test_basic_capture_is_api_capture_with_unknown_coverage(self):
         artifact, stats = ps._build_session_artifact(sample_body())
+        self.assertEqual(ps.ACTION_VERSION, "0.1.2")
         self.assertEqual(artifact["proofstamp"]["capture_method"], "api_capture")
         self.assertEqual(artifact["capture"]["completeness"]["status"], "unknown")
         self.assertEqual(ps._coverage_label(artifact), "not independently confirmed")
@@ -269,11 +270,26 @@ class OpenWebUIActionTests(unittest.TestCase):
         query = parse_qs(parsed.query)
         self.assertEqual(query["subject"][0], f"ProofStamp: {filename}")
         body = query["body"][0]
+        self.assertTrue(body.startswith("ProofStamp͘\n\n"))
         self.assertIn(f"SHA-256: {digest}", body)
         self.assertIn("Byte size: 1234", body)
         self.assertIn("Hash verified locally: yes", body)
         self.assertIn("Conversation coverage: not independently confirmed", body)
         self.assertIn(ps.VERIFY_URL, body)
+
+    def test_fallback_email_text_preserves_plain_text_signature(self):
+        filename = "open-webui-session-2026-08-24-120000.proofstamp.json"
+        digest = "a" * 64
+        text = ps._fallback_email_text(
+            filename, digest, 1234, "not independently confirmed"
+        )
+        self.assertTrue(
+            text.startswith(
+                f"To: \nSubject: ProofStamp: {filename}\n\nProofStamp͘\n\n"
+            )
+        )
+        self.assertIn(f"SHA-256: {digest}", text)
+        self.assertIn("Byte size: 1234", text)
 
     def test_generic_filename_is_privacy_safe(self):
         filename = ps._safe_filename(

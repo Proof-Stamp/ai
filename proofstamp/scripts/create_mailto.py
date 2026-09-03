@@ -59,7 +59,7 @@ def build_email_content(artifact_path: Path, receipt_path: Path) -> tuple[str, s
     subject = f"ProofStamp: {artifact_path.name}"
     body = "\n".join(
         [
-            "PROOFSTAMP",
+            "ProofStamp͘",
             "",
             f"File: {artifact_path.name}",
             f"SHA-256: {actual_hash}",

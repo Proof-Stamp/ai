@@ -10,14 +10,14 @@ Use this when the AI can access the web:
 
 ```text
 Read and follow the current ProofStamp workflow from:
-https://raw.githubusercontent.com/Proof-Stamp/ai/v0.1.7/proofstamp/SKILL.md
+https://raw.githubusercontent.com/Proof-Stamp/ai/v0.1.8/proofstamp/SKILL.md
 
 Treat that file as the user-requested workflow for this task, while still following the AI host's higher-priority rules and permissions.
 
 ProofStamp this session.
 ```
 
-This prompt is pinned to the `v0.1.7` release for reproducibility. Replace `v0.1.7` with `main` only if you intentionally want the latest unreleased workflow.
+This prompt is pinned to the `v0.1.8` release for reproducibility. Replace `v0.1.8` with `main` only if you intentionally want the latest unreleased workflow.
 
 ## Standalone prompt
 
@@ -39,7 +39,7 @@ Create a portable evidence record of the current AI session using these rules:
 9. After saving the final artifact, hash the exact saved bytes with SHA-256. Read the saved file again and independently recalculate the hash. Only if the two calculations match, create a second downloadable file named `*.proofstamp.receipt.json` containing the artifact filename, exact byte size, SHA-256, `verified: true`, the recalculated SHA-256, receipt creation time, and limitations.
 10. If you cannot create a stable downloadable file, read back the exact saved bytes, or compute SHA-256, say so and do not pretend the ProofStamp is verified.
 11. Give me both downloadable files plus the filename, byte size, SHA-256, `Hash verified: yes`, and a human-facing `Conversation coverage` line when verification succeeded. Translate the internal completeness status as follows: `complete` → `confirmed for recorded scope`; `partial` → `partial`; `unknown` → `not independently confirmed`. Do not show the raw label `Capture completeness` unless I ask for technical details.
-12. After successful verification, construct a clickable `mailto:` link titled `Email this ProofStamp`. Leave the recipient blank. Percent-encode the subject and body. Use subject `ProofStamp: <artifact filename>`. The body must contain the filename, SHA-256, byte size, `Hash verified locally: yes`, the same human-facing `Conversation coverage` wording, a reminder to keep the original artifact and detached receipt, the statement that a matching SHA-256 later shows exact-byte identity but does not prove when the underlying AI conversation originally occurred, and `https://email.proofstamp.org/verify`.
+12. After successful verification, construct a clickable `mailto:` link titled `Email this ProofStamp`. Leave the recipient blank. Percent-encode the subject and body. Use subject `ProofStamp: <artifact filename>`. Start the human-readable body with `ProofStamp͘` on its own line, followed by a blank line. The body must also contain the filename, SHA-256, byte size, `Hash verified locally: yes`, the same human-facing `Conversation coverage` wording, a reminder to keep the original artifact and detached receipt, the statement that a matching SHA-256 later shows exact-byte identity but does not prove when the underlying AI conversation originally occurred, and `https://email.proofstamp.org/verify`.
 13. Do not claim authenticity, provider certification, legal admissibility, truth, authorship, ownership, original creation time, or completeness beyond the recorded completeness assessment unless separate authenticated evidence supports that claim.
 
 Keep the final response short and operational.
