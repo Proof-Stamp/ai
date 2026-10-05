@@ -216,6 +216,8 @@ python scripts/finalize_proofstamp.py path/to/session.proofstamp.json
 
 The finalizer validates the session against the bundled v1 schema using Python's standard library, enforces capture trust rules that JSON Schema alone cannot express, creates and validates the detached receipt, independently verifies the exact saved artifact bytes, and prepares the required user-controlled email handoff.
 
+These trust checks enforce consistency only. The helper does not authenticate messages, provenance labels, or completeness evidence references. It rejects `ai_generated` plus `complete`, complete captures with redactions or no scope/evidence reference, and duplicate or non-increasing message sequences. It also rejects `provider_signed` captures because it has no provider-signature verifier. Preserve genuine signed evidence for a capable verifier rather than changing its capture method to bypass this check. The output field `capture_trust_validation_scope` makes this boundary explicit; `capture_trust_validation: passed` does not establish source authenticity.
+
 Lower-level scripts remain available for debugging or independent use:
 
 ```bash

@@ -43,6 +43,10 @@ class ClaudeOptimizedFlowTests(unittest.TestCase):
             output = json.loads(result.stdout)
             self.assertEqual("passed", output["schema_validation"])
             self.assertEqual("passed", output["capture_trust_validation"])
+            self.assertEqual(
+                "consistency_checks_only_not_source_authentication",
+                output["capture_trust_validation_scope"],
+            )
             self.assertIs(True, output["hash_verified"])
             self.assertEqual("unknown", output["capture_completeness"])
             self.assertEqual("not independently confirmed", output["conversation_coverage"])
@@ -99,6 +103,77 @@ class ClaudeOptimizedFlowTests(unittest.TestCase):
             )
             self.assertNotEqual(0, result.returncode)
             self.assertIn("missing required property 'completeness'", result.stderr)
+
+    def test_finalizer_rejects_inconsistent_claims_without_creating_receipt(self):
+        cases = {
+            "redacted-complete": "redacted capture cannot claim completeness",
+            "empty-scope": "non-empty declared scope",
+            "missing-evidence": "affirmative evidence_reference",
+            "duplicate-sequence": "unique and strictly increasing",
+            "reversed-sequence": "unique and strictly increasing",
+            "unsupported-signature": "no provider-signature verifier",
+        }
+        for case, expected_error in cases.items():
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as tmp:
+                value = json.loads(EXAMPLE.read_text(encoding="utf-8"))
+                value["proofstamp"]["capture_method"] = "api_capture"
+                completeness = value["capture"]["completeness"]
+                if case == "redacted-complete":
+                    value["session"]["messages"][0]["content"] = "[REDACTED]"
+                    value["capture"]["redactions"] = [{
+                        "location": "session.messages[0].content",
+                        "reason": "user_requested_secret_redaction",
+                    }]
+                elif case == "empty-scope":
+                    value["capture"]["scope"] = []
+                elif case == "missing-evidence":
+                    completeness.pop("evidence_reference")
+                elif case == "duplicate-sequence":
+                    value["session"]["messages"][1]["sequence"] = 1
+                elif case == "reversed-sequence":
+                    value["session"]["messages"].reverse()
+                elif case == "unsupported-signature":
+                    value["proofstamp"]["capture_method"] = "provider_signed"
+                    completeness["status"] = "unknown"
+
+                artifact = Path(tmp) / "synthetic-review.proofstamp.json"
+                artifact.write_text(json.dumps(value), encoding="utf-8")
+                original = artifact.read_bytes()
+                result = subprocess.run(
+                    [sys.executable, str(SCRIPTS / "finalize_proofstamp.py"), str(artifact)],
+                    cwd=ROOT, text=True, capture_output=True,
+                )
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(expected_error, result.stderr)
+                self.assertEqual(original, artifact.read_bytes())
+                self.assertFalse((Path(tmp) / "synthetic-review.proofstamp.receipt.json").exists())
+
+    def test_finalizer_accepts_host_complete_and_redacted_partial_with_explicit_boundary(self):
+        for redacted in (False, True):
+            with self.subTest(redacted=redacted), tempfile.TemporaryDirectory() as tmp:
+                value = json.loads(EXAMPLE.read_text(encoding="utf-8"))
+                value["proofstamp"]["capture_method"] = "api_capture"
+                if redacted:
+                    value["capture"]["completeness"]["status"] = "partial"
+                    value["session"]["messages"][0]["content"] = "[REDACTED]"
+                    value["capture"]["redactions"] = [{
+                        "location": "session.messages[0].content",
+                        "reason": "user_requested_secret_redaction",
+                    }]
+                artifact = Path(tmp) / "synthetic-valid.proofstamp.json"
+                artifact.write_text(json.dumps(value), encoding="utf-8")
+                result = subprocess.run(
+                    [sys.executable, str(SCRIPTS / "finalize_proofstamp.py"), str(artifact)],
+                    cwd=ROOT, text=True, capture_output=True,
+                )
+                self.assertEqual(0, result.returncode, result.stderr)
+                output = json.loads(result.stdout)
+                self.assertTrue(output["hash_verified"])
+                self.assertEqual("partial" if redacted else "complete", output["capture_completeness"])
+                self.assertEqual(
+                    "consistency_checks_only_not_source_authentication",
+                    output["capture_trust_validation_scope"],
+                )
 
     def test_validator_does_not_treat_zero_as_json_false(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -53,6 +53,25 @@ def validate_capture_semantics(artifact_path: Path) -> list[str]:
             "capture method backed by separate host/API/export/provider evidence is used"
         )
 
+    if completeness.get("status") == "complete":
+        if capture.get("redactions"):
+            errors.append("redacted capture cannot claim completeness 'complete'; use 'partial'")
+        if not capture.get("scope"):
+            errors.append("complete capture requires a non-empty declared scope")
+        if not completeness.get("evidence_reference"):
+            errors.append("complete capture requires an affirmative evidence_reference")
+
+    messages = value.get("session", {}).get("messages", [])
+    sequences = [message["sequence"] for message in messages]
+    if any(current <= previous for previous, current in zip(sequences, sequences[1:])):
+        errors.append("message sequence numbers must be unique and strictly increasing")
+
+    if proofstamp.get("capture_method") == "provider_signed":
+        errors.append(
+            "provider_signed capture is unsupported by this finalizer: no provider-signature "
+            "verifier is implemented; do not downgrade genuine signed evidence to bypass this check"
+        )
+
     return errors
 
 
@@ -94,6 +113,7 @@ def finalize(artifact: Path, *, force: bool = False) -> dict:
         "bytes": actual_size,
         "schema_validation": "passed",
         "capture_trust_validation": "passed",
+        "capture_trust_validation_scope": "consistency_checks_only_not_source_authentication",
         "hash_verified": True,
         "capture_completeness": completeness,
         "conversation_coverage": coverage,
