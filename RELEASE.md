@@ -11,11 +11,13 @@ Choose the next version and confirm the intended scope.
 For a release that changes the canonical Agent Skill, update every version-bearing public entry point that is expected to stay in sync, including:
 
 - `proofstamp/SKILL.md` metadata;
-- the immutable workflow reference in `PROMPT.md`;
+- the immutable workflow reference in `PROMPT.md`, when the intended published target actually exists;
 - README version text and badges where applicable;
 - release/package documentation affected by the change.
 
 Do not mix unrelated feature work into a release-only version bump.
+
+Keep the short prompt pinned to an existing published release while preparing an unreleased version. Do not require its version to match `main` before the new tag exists. After publication, update the pointer and verify that the exact URL resolves.
 
 ## Required checks
 
@@ -27,7 +29,7 @@ Before tagging:
 - [ ] Perform any model- or host-dependent smoke tests required by the changed surface.
 - [ ] Merge the release PR.
 - [ ] Confirm the GitHub Actions `tests` workflow passes on the exact final `main` commit that will be tagged.
-- [ ] Confirm the version-bearing public files agree with one another.
+- [ ] Confirm the current skill version and published-release pointers are accurately labeled; every pinned public URL resolves.
 
 For changes to capture, hashing, receipts, conversation coverage, privacy, email handoff, or host adapters, add focused regression coverage before release rather than relying only on manual testing.
 

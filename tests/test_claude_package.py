@@ -107,6 +107,29 @@ class ClaudePackageTests(unittest.TestCase):
             self.builder.build(REPO_ROOT, second)
             self.assertEqual(first.read_bytes(), second.read_bytes())
 
+    def test_local_cache_and_temporary_files_do_not_change_package(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp) / "repo"
+            source = repo_root / "proofstamp"
+            shutil.copytree(REPO_ROOT / "proofstamp", source)
+            clean = Path(tmp) / "clean.zip"
+            dirty = Path(tmp) / "dirty.zip"
+            self.builder.build(repo_root, clean)
+            for relative in (
+                "scripts/__pycache__/local.cpython-312.pyc",
+                "scripts/__pycache__/local.py",
+                "scripts/local.pyc",
+                "scripts/local.tmp",
+                ".env",
+                ".DS_Store",
+                "references/.local-note.json",
+            ):
+                path = source / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("synthetic local file", encoding="utf-8")
+            self.builder.build(repo_root, dirty)
+            self.assertEqual(clean.read_bytes(), dirty.read_bytes())
+
 
 if __name__ == "__main__":
     unittest.main()

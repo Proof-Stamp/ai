@@ -23,6 +23,8 @@ No ProofStamp account, API, database, blockchain, or automatic upload is require
 
 Current skill metadata: `0.1.8`.
 
+The latest published release is [`v0.1.6`](https://github.com/Proof-Stamp/ai/releases/tag/v0.1.6). The short prompt and released Claude ZIP use the published version. `0.1.8` on `main` is unreleased.
+
 Starting with v0.1.7, a routine installed-skill capture does not mechanically load every bundled reference document and JSON Schema into model context. The compact canonical runtime contract stays in `SKILL.md`; the bundled standard-library finalizer performs schema validation, trust-rule checks, receipt creation, exact-byte verification, and email-handoff preparation deterministically. Detailed references remain available for edge cases and review.
 
 ## Start here
@@ -94,6 +96,8 @@ For the normal Python-capable installed-skill path:
 ```bash
 python scripts/finalize_proofstamp.py path/to/session.proofstamp.json
 ```
+
+Capture trust validation checks consistency, not source authenticity. The finalizer rejects AI-generated complete captures, complete captures with redactions or no scope/evidence reference, and duplicate or out-of-order message sequences. An evidence reference is not authenticated by this helper. `provider_signed` capture is rejected until a provider-signature verifier is implemented.
 
 The recipient stays blank. ProofStamp does not auto-send the email or claim that files were attached automatically.
 

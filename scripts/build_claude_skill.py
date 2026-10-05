@@ -82,6 +82,10 @@ def package_files(source_dir: Path) -> list[tuple[Path, str]]:
         if not path.is_file():
             continue
         rel = path.relative_to(source_dir)
+        if any(part.startswith(".") or part == "__pycache__" for part in rel.parts):
+            continue
+        if path.suffix not in {".md", ".json", ".py"}:
+            continue
         if rel.as_posix() == "SKILL.md":
             continue
         files.append((path, f"proofstamp/{rel.as_posix()}"))

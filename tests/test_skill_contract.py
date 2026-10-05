@@ -70,10 +70,19 @@ class SkillContractTests(unittest.TestCase):
         self.assertLessEqual(len(description), 1024)
         self.assertRegex(version, r"^\d+\.\d+\.\d+$")
 
-    def test_release_entry_points_match_skill_version(self):
+    def test_release_pointer_is_pinned_and_main_version_is_disclosed(self):
         version = self.skill_version()
-        self.assertIn(f"/v{version}/proofstamp/SKILL.md", self.prompt_text)
-        self.assertIn(f"pinned to the `v{version}` release", self.prompt_text)
+        match = re.search(
+            r"https://raw\.githubusercontent\.com/Proof-Stamp/ai/(v\d+\.\d+\.\d+)/proofstamp/SKILL\.md",
+            self.prompt_text,
+        )
+        self.assertIsNotNone(match)
+        published_tag = match.group(1)
+        self.assertIn(f"pinned to the published `{published_tag}` release", self.prompt_text)
+        self.assertIn(f"/releases/tag/{published_tag}", self.readme_text)
+        if published_tag != f"v{version}":
+            self.assertIn(f"`{version}`, which is not yet a published release", self.prompt_text)
+            self.assertIn(f"`{version}` on `main` is unreleased", self.readme_text)
         self.assertIn(f"Current skill metadata: `{version}`", self.readme_text)
 
     def test_skill_runtime_is_token_efficient(self):
