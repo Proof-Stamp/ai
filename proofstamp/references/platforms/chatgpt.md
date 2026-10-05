@@ -15,6 +15,14 @@ For repeated use, a private ChatGPT Project may hold ProofStamp-specific project
 
 Source: https://help.openai.com/en/articles/10169521
 
+### Routine capture execution
+
+Use the runtime already available in the current session. If the prompt loads `SKILL.md` from a repository ref, fetch only missing runtime support files directly from that same ref and preserve their relative paths. Do not search the web, inspect GitHub history, install packages, or read every reference/schema into model context. The bundled finalizer is dependency-free.
+
+For the standalone prompt, use the active file/hash tools directly; repository retrieval is not part of that workflow. In either path, stop with an explicit capability limitation if exact saved-byte verification is unavailable.
+
+If earlier messages are known to be missing or summarized, disclose partial coverage and continue with the available text. Do not reconstruct missing messages, paraphrase available ones, or retrieve unrelated chats. Deliver immediately after the required validation, hashing, and host file-saving operations succeed. These are execution instructions, not a measured latency or cost guarantee.
+
 ## Capture method
 
 Default consumer-chat capture should use:

@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/Proof-Stamp/ai/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/Proof-Stamp/ai/actions/workflows/test.yml/badge.svg"></a>
-  <img alt="Skill version 0.1.8" src="https://img.shields.io/badge/skill-v0.1.8-071c33">
+  <img alt="Skill version 0.1.9" src="https://img.shields.io/badge/skill-v0.1.9-071c33">
   <a href="https://skills.sh/proof-stamp/ai/proofstamp"><img alt="skills.sh" src="https://img.shields.io/badge/skills.sh-proofstamp-08796f"></a>
   <a href="LICENSE"><img alt="Apache 2.0" src="https://img.shields.io/badge/license-Apache--2.0-51677c"></a>
 </p>
@@ -21,9 +21,11 @@ The intended command is simple:
 
 No ProofStamp account, API, database, blockchain, or automatic upload is required for the core workflow.
 
-Current skill metadata: `0.1.8`.
+Current skill metadata: `0.1.9`.
 
 The latest prerelease is [`v0.1.8`](https://github.com/Proof-Stamp/ai/releases/tag/v0.1.8), available for testing. The short prompt uses this version. Live ChatGPT, Claude.ai, and Open WebUI end-to-end capture tests remain outstanding. The latest stable release is [`v0.1.6`](https://github.com/Proof-Stamp/ai/releases/tag/v0.1.6).
+
+`0.1.9` on `main` is unreleased. It tightens routine execution: reuse available runtime files, fetch missing support files directly, disclose missing history promptly, and avoid repository review or web searches during capture. The short and standalone prompts include the same guidance. Lower latency and token use remain to be measured in live host tests.
 
 Starting with v0.1.7, a routine installed-skill capture does not mechanically load every bundled reference document and JSON Schema into model context. The compact canonical runtime contract stays in `SKILL.md`; the bundled standard-library finalizer performs schema validation, trust-rule checks, receipt creation, exact-byte verification, and email-handoff preparation deterministically. Detailed references remain available for edge cases and review.
 
