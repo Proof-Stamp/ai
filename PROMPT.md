@@ -1,8 +1,10 @@
 # ProofStamp without installing the skill
 
+> **Temporarily paused (2026-10-05).** Development and further releases are paused. These prompts are retained for experimental reference. See [project status](README.md#project-status-temporarily-paused) for the reason and possible direction for future evaluation.
+
 You do not need to install the Agent Skill to use the basic ProofStamp workflow.
 
-The skill is the preferred option because it packages the versioned instructions, schemas, reference scripts, privacy rules, completeness rules, and security boundaries together. A prompt-only run depends more heavily on the capabilities and behavior of the current AI host.
+The skill packages the versioned instructions, schemas, reference scripts, privacy rules, completeness rules, and security boundaries together. A prompt-only run depends more heavily on the capabilities and behavior of the current AI host.
 
 ## Short prompt
 

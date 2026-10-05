@@ -11,6 +11,16 @@
 
 # ProofStamp AI
 
+## Project status: temporarily paused
+
+**2026-10-05:** Development and further releases of ProofStamp AI are paused.
+
+Practical chat use exposed too much capture overhead and dependence on the conversation history available to the model. This is a usability finding, not a measured cross-platform performance or cost benchmark.
+
+Existing releases and prompts are retained for experimental reference. Before resuming, evaluate direct capture from host data or exports, with ordinary software producing the record and handling hashing and verification. This is a proposed direction; the existing Open WebUI Action remains experimental.
+
+## Existing workflow
+
 ProofStamp AI is an open Agent Skill and prompt workflow for creating a portable, inspectable record of an AI session.
 
 It captures only information the current AI environment can legitimately access, saves that evidence as JSON, verifies the exact saved bytes with SHA-256, creates a detached receipt, and prepares a user-controlled handoff for external time evidence.
@@ -23,13 +33,13 @@ No ProofStamp account, API, database, blockchain, or automatic upload is require
 
 Current skill metadata: `0.1.9`.
 
-The latest prerelease is [`v0.1.8`](https://github.com/Proof-Stamp/ai/releases/tag/v0.1.8), available for testing. The short prompt uses this version. Live ChatGPT, Claude.ai, and Open WebUI end-to-end capture tests remain outstanding. The latest stable release is [`v0.1.6`](https://github.com/Proof-Stamp/ai/releases/tag/v0.1.6).
+The latest prerelease is [`v0.1.8`](https://github.com/Proof-Stamp/ai/releases/tag/v0.1.8), retained for experimental reference. The short prompt uses this version. Live ChatGPT, Claude.ai, and Open WebUI end-to-end capture tests remain outstanding. The latest stable release is [`v0.1.6`](https://github.com/Proof-Stamp/ai/releases/tag/v0.1.6).
 
 `0.1.9` on `main` is unreleased. It tightens routine execution: reuse available runtime files, fetch missing support files directly, disclose missing history promptly, and avoid repository review or web searches during capture. The short and standalone prompts include the same guidance. Lower latency and token use remain to be measured in live host tests.
 
 Starting with v0.1.7, a routine installed-skill capture does not mechanically load every bundled reference document and JSON Schema into model context. The compact canonical runtime contract stays in `SKILL.md`; the bundled standard-library finalizer performs schema validation, trust-rule checks, receipt creation, exact-byte verification, and email-handoff preparation deterministically. Detailed references remain available for edge cases and review.
 
-## Start here
+## Existing experimental workflows
 
 ### Install the Agent Skill
 

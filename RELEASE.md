@@ -1,5 +1,7 @@
 # Release process
 
+> **Release work paused (2026-10-05).** Do not prepare or publish further releases while the project is paused. The checklist below is retained for use if work resumes. See [project status](README.md#project-status-temporarily-paused).
+
 ProofStamp AI uses tagged GitHub releases as immutable public release boundaries. Do not create a tag until the exact target commit has passed the required tests and release smoke checks.
 
 This file is intentionally version-neutral so it does not become stale after every release.
