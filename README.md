@@ -23,7 +23,7 @@ No ProofStamp account, API, database, blockchain, or automatic upload is require
 
 Current skill metadata: `0.1.8`.
 
-The latest published release is [`v0.1.6`](https://github.com/Proof-Stamp/ai/releases/tag/v0.1.6). The short prompt and released Claude ZIP use the published version. `0.1.8` on `main` is unreleased.
+The latest prerelease is [`v0.1.8`](https://github.com/Proof-Stamp/ai/releases/tag/v0.1.8), available for testing. The short prompt uses this version. Live ChatGPT, Claude.ai, and Open WebUI end-to-end capture tests remain outstanding. The latest stable release is [`v0.1.6`](https://github.com/Proof-Stamp/ai/releases/tag/v0.1.6).
 
 Starting with v0.1.7, a routine installed-skill capture does not mechanically load every bundled reference document and JSON Schema into model context. The compact canonical runtime contract stays in `SKILL.md`; the bundled standard-library finalizer performs schema validation, trust-rule checks, receipt creation, exact-byte verification, and email-handoff preparation deterministically. Detailed references remain available for edge cases and review.
 
@@ -42,6 +42,8 @@ The installable skill lives in [`proofstamp/`](proofstamp/) and is listed on [sk
 ### Claude.ai
 
 For Claude.ai, upload the generated **Claude skill package** from the GitHub Release assets. Do not upload only `proofstamp/SKILL.md`, and do not use the repository source ZIP as a substitute for the Claude package.
+
+For the v0.1.8 prerelease, download [`proofstamp.zip`](https://github.com/Proof-Stamp/ai/releases/download/v0.1.8/proofstamp.zip).
 
 A complete Claude package must contain the runtime file plus the bundled `references/`, `schemas/`, and `scripts/` directories. Without those support files, Claude can only perform a best-effort manual capture and cannot run the official deterministic finalizer or schema validation.
 
